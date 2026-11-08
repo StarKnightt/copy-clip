@@ -1,0 +1,620 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Paper Copy</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600&family=JetBrains+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg-hi:#EFEEEA; --bg:#E5E3DD; --bg-lo:#D9D6CE;
+  --card:#FBFAF7; --ink:#23211D; --muted:#8C877D; --line:rgba(45,38,28,.09);
+  --ok:#2F6B4F; --ring:#23211D;
+  --kw:#8A3B5C; --fn:#22636B; --num:#6A7428; --com:#9E998F; --punc:#4E4A43;
+  --paper:#FDFBF6;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden}
+body{
+  background:radial-gradient(120% 85% at 50% 38%, var(--bg-hi) 0%, var(--bg) 55%, var(--bg-lo) 100%);
+  color:var(--ink); font-family:'Bricolage Grotesque',system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+.demo body, html.demo{cursor:none}
+
+/* Fixed 1080x1350 design stage, scaled to fit the viewport */
+#stage{position:fixed;left:50%;top:50%;width:1080px;height:1350px;transform-origin:50% 50%}
+
+/* ---------- card ---------- */
+.card{position:absolute;left:160px;top:200px;width:760px;height:460px;z-index:20;
+  background:var(--card);border-radius:24px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.9), 0 0 0 1px var(--line),
+    0 2px 4px rgba(45,35,20,.05), 0 18px 40px -14px rgba(45,35,20,.20), 0 60px 100px -50px rgba(45,35,20,.28)}
+.head{height:92px;display:flex;align-items:center;justify-content:space-between;
+  padding:0 22px 0 34px;border-bottom:1px solid var(--line)}
+.file{display:flex;align-items:center;gap:14px}
+.file svg{flex:none}
+.fname{font:500 23px/1 'Bricolage Grotesque',sans-serif;letter-spacing:-.01em}
+.lang{font:500 14px/1 'JetBrains Mono',monospace;color:var(--muted);letter-spacing:.04em;
+  border:1px solid var(--line);padding:7px 9px 6px;border-radius:7px}
+.body{position:absolute;left:0;top:92px;width:760px;height:368px}
+
+pre.code{margin:0;padding:32px 36px;font:400 24px/38px 'JetBrains Mono',monospace;color:var(--punc);
+  white-space:pre;font-variant-ligatures:none}
+pre.code .ln{display:inline-block;width:28px;text-align:right;margin-right:26px;color:#C2BDB3;user-select:none}
+pre.code .k{color:var(--kw)} pre.code .f{color:var(--fn)} pre.code .n{color:var(--num)}
+pre.code .c{color:var(--com);font-style:italic}
+
+/* ---------- copy button ---------- */
+.copy{position:relative;width:156px;height:54px;border:0;padding:0;border-radius:15px;background:none;
+  cursor:pointer;font:600 20px/1 'Bricolage Grotesque',sans-serif;color:#F7F5F0;-webkit-tap-highlight-color:transparent}
+.copy:focus{outline:none}
+.copy:focus-visible{outline:3px solid var(--ring);outline-offset:4px}
+.copy .inner{position:absolute;inset:0;border-radius:15px;overflow:hidden;background:var(--ink);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.14), 0 1px 2px rgba(0,0,0,.18), 0 6px 14px -6px rgba(35,33,29,.55)}
+.copy .hov,.copy .okfill{position:absolute;inset:0;opacity:0}
+.copy .hov{background:rgba(255,255,255,.09)}
+.copy .okfill{background:var(--ok)}
+html:not(.demo) .copy:hover .hov{opacity:1;transition:opacity .15s}
+.copy .lbl{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:10px}
+.copy .done{opacity:0}
+.copy .check{transform-origin:50% 55%}
+
+/* ---------- clipboard ---------- */
+.board{position:absolute;left:580px;top:740px;width:300px;height:410px;z-index:5;border-radius:18px;
+  background-color:#C79B66;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='410'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.006 0.19' numOctaves='3' seed='4'/%3E%3CfeColorMatrix values='0 0 0 0 0.36  0 0 0 0 0.20  0 0 0 0 0.08  0 0 0 -1.6 1.05'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E"),
+    linear-gradient(160deg,#D6AE7A 0%,#C6955E 45%,#B78550 100%);
+  box-shadow:inset 0 2px 0 rgba(255,236,210,.45), inset 0 -3px 0 rgba(90,52,20,.28), inset 0 0 0 1px rgba(90,52,20,.18),
+    0 2px 3px rgba(60,38,16,.22), 0 24px 44px -16px rgba(60,38,16,.42)}
+.clip-base{position:absolute;left:655px;top:718px;width:150px;height:60px;z-index:40}
+.clip-jaw{position:absolute;left:642px;top:754px;width:176px;height:50px;z-index:42;transform-origin:50% 0}
+.jaw-shadow{position:absolute;left:648px;top:760px;width:164px;height:44px;z-index:41;border-radius:10px;
+  background:rgba(40,24,8,.55);filter:blur(5px);opacity:.55}
+
+/* ---------- paper sheets ---------- */
+.sheet{position:absolute;left:0;top:0;width:760px;height:368px;z-index:60;transform-origin:190px 184px;
+  perspective:1600px;perspective-origin:190px 184px;will-change:transform,opacity;visibility:hidden;pointer-events:none}
+.sh-shadow{position:absolute;left:14px;top:14px;width:732px;height:340px;border-radius:8px;transform-origin:0 50%;
+  background:rgba(48,34,18,.55);filter:blur(14px);opacity:0}
+.sh-3d{position:absolute;inset:0;transform-style:preserve-3d;transform-origin:190px 184px}
+.half{position:absolute;top:0;width:380px;height:368px;overflow:hidden}
+.half.L{left:0} .half.R{left:380px;transform-origin:0 50%;backface-visibility:hidden}
+.paper{position:absolute;top:8px;bottom:8px;background-color:var(--paper);opacity:0;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .42  0 0 0 0 .37  0 0 0 0 .30  0 0 0 .11 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
+    linear-gradient(175deg,#FFFDF8,#F6F2E8);
+  box-shadow:inset 0 0 0 1px rgba(60,45,25,.07)}
+.L .paper{left:8px;right:0;border-radius:5px 0 0 5px}
+.R .paper{left:0;right:8px;border-radius:0 5px 5px 0}
+.ink{position:absolute;top:0;width:760px;height:368px}
+.L .ink{left:0} .R .ink{left:-380px}
+.crease{position:absolute;right:0;top:8px;bottom:8px;width:10px;opacity:0;
+  background:linear-gradient(90deg,rgba(0,0,0,0),rgba(70,52,30,.10) 70%,rgba(255,255,255,.7))}
+.shade{position:absolute;inset:8px 8px 8px 0;background:linear-gradient(90deg,rgba(60,45,25,.35),rgba(60,45,25,.05));opacity:0}
+
+/* ---------- mute toggle ---------- */
+.mute{position:fixed;top:22px;right:22px;z-index:90;width:46px;height:46px;border-radius:50%;border:0;cursor:pointer;
+  background:rgba(251,250,247,.75);color:var(--ink);display:grid;place-items:center;
+  box-shadow:0 0 0 1px var(--line), 0 4px 12px -6px rgba(45,35,20,.35)}
+.mute:focus{outline:none}
+.mute:focus-visible{outline:3px solid var(--ring);outline-offset:3px}
+.mute .off{display:none} .mute[aria-pressed="true"] .on{display:none} .mute[aria-pressed="true"] .off{display:block}
+
+/* ---------- demo cursor ---------- */
+.cursor{position:absolute;left:0;top:0;z-index:100;width:30px;height:34px;display:none;transform-origin:3px 3px;
+  filter:drop-shadow(0 2px 3px rgba(0,0,0,.28));will-change:transform}
+html.demo .cursor{display:block}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+</style>
+</head>
+<body>
+<main id="stage">
+  <section class="card" aria-label="Code snippet: debounce.js">
+    <div class="head">
+      <div class="file">
+        <svg width="26" height="30" viewBox="0 0 26 30" aria-hidden="true"><path d="M3 1.5h13.5L24.5 9.5V27a1.5 1.5 0 0 1-1.5 1.5H3A1.5 1.5 0 0 1 1.5 27V3A1.5 1.5 0 0 1 3 1.5Z" fill="#F1EEE7" stroke="#B9B3A8" stroke-width="1.4"/><path d="M16.5 1.5V8a1.5 1.5 0 0 0 1.5 1.5h6.5" fill="none" stroke="#B9B3A8" stroke-width="1.4"/><path d="M6.5 15.5h11M6.5 19.5h8M6.5 23.5h10" stroke="#8A3B5C" stroke-width="1.8" stroke-linecap="round" opacity=".75"/></svg>
+        <span class="fname">debounce.js</span>
+        <span class="lang">JS</span>
+      </div>
+      <button class="copy" id="copy" type="button" aria-label="Copy code">
+        <span class="inner">
+          <span class="okfill"></span><span class="hov"></span>
+          <span class="lbl idle">
+            <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><rect x="6.5" y="6.5" width="11" height="11" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M13.5 3.8V3.5a1.5 1.5 0 0 0-1.5-1.5H4A1.5 1.5 0 0 0 2.5 3.5V12A1.5 1.5 0 0 0 4 13.5h.3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+            <span>Copy</span>
+          </span>
+          <span class="lbl done">
+            <svg class="check" width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10.5l4 4 8-9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span>Copied</span>
+          </span>
+        </span>
+      </button>
+    </div>
+    <div class="body" id="codebody"><pre class="code" id="code"></pre></div>
+  </section>
+
+  <div class="board" aria-hidden="true"></div>
+  <div class="jaw-shadow" id="jawShadow" aria-hidden="true"></div>
+  <svg class="clip-base" viewBox="0 0 150 60" aria-hidden="true">
+    <defs>
+      <linearGradient id="mb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#EEF0F1"/><stop offset=".45" stop-color="#C3C9CD"/><stop offset="1" stop-color="#8F979D"/></linearGradient>
+      <linearGradient id="rv" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#7E868C"/></linearGradient>
+    </defs>
+    <path d="M14 8 Q14 2 20 2 H130 Q136 2 136 8 V44 Q136 50 130 50 H20 Q14 50 14 44Z" fill="url(#mb)" stroke="#7D858B" stroke-width="1"/>
+    <rect x="52" y="9" width="46" height="13" rx="6.5" fill="#5D646A"/>
+    <rect x="52" y="9" width="46" height="6" rx="3" fill="#3F454A" opacity=".6"/>
+    <path d="M22 5 H128" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity=".85"/>
+    <circle cx="32" cy="36" r="5" fill="url(#rv)" stroke="#6E767C" stroke-width=".8"/>
+    <circle cx="118" cy="36" r="5" fill="url(#rv)" stroke="#6E767C" stroke-width=".8"/>
+  </svg>
+  <svg class="clip-jaw" id="jaw" viewBox="0 0 176 50" aria-hidden="true">
+    <defs>
+      <linearGradient id="jg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9AA2A8"/><stop offset=".22" stop-color="#F4F6F7"/><stop offset=".5" stop-color="#C9CFD3"/><stop offset=".85" stop-color="#9CA4AA"/><stop offset="1" stop-color="#727A80"/></linearGradient>
+      <linearGradient id="jh" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".3" stop-color="#fff" stop-opacity=".95"/><stop offset=".7" stop-color="#fff" stop-opacity=".95"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+    </defs>
+    <path d="M6 2 H170 Q174 2 173.5 6 L168 40 Q167 48 158 48 H18 Q9 48 8 40 L2.5 6 Q2 2 6 2Z" fill="url(#jg)" stroke="#6F777D" stroke-width="1"/>
+    <rect x="24" y="9" width="128" height="2.2" rx="1.1" fill="url(#jh)"/>
+    <path d="M14 43 H162" stroke="#5F676D" stroke-width="1.2" opacity=".55"/>
+  </svg>
+
+  <div id="sheets"></div>
+
+  <svg class="cursor" id="cursor" viewBox="0 0 30 34" aria-hidden="true"><path d="M3 3 L3 26.5 L9.2 20.6 L13.6 30.4 L18.1 28.4 L13.8 18.9 L22.3 18.9 Z" fill="#fff" stroke="#1A1814" stroke-width="1.7" stroke-linejoin="round"/></svg>
+</main>
+
+<button class="mute" id="mute" type="button" aria-pressed="false" aria-label="Mute sound">
+  <svg class="on" width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><path d="M3 8.5h3.5L11 4.5v13l-4.5-4H3z" fill="currentColor"/><path d="M14 8a4 4 0 0 1 0 6M16.5 5.5a7.5 7.5 0 0 1 0 11" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+  <svg class="off" width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><path d="M3 8.5h3.5L11 4.5v13l-4.5-4H3z" fill="currentColor"/><path d="M14.5 8.5l5 5M19.5 8.5l-5 5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+</button>
+<div class="sr" id="live" aria-live="polite"></div>
+
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+
+/* ------------------------------------------------------------------ content */
+const CODE =
+`// wait for the quiet, then act
+function debounce(fn, ms = 180) {
+  let t;
+  return (...args) => {
+    clearTimeout(t);
+    t = setTimeout(fn, ms, ...args);
+  };
+}`;
+const HL = [
+  '<span class="c">// wait for the quiet, then act</span>',
+  '<span class="k">function</span> <span class="f">debounce</span>(fn, ms = <span class="n">180</span>) {',
+  '  <span class="k">let</span> t;',
+  '  <span class="k">return</span> (...args) =&gt; {',
+  '    <span class="f">clearTimeout</span>(t);',
+  '    t = <span class="f">setTimeout</span>(fn, ms, ...args);',
+  '  };',
+  '}'];
+$('#code').innerHTML = HL.map((l, i) => `<span class="ln">${i + 1}</span>${l}`).join('\n');
+
+/* ------------------------------------------------------------------ modes */
+const DEMO = /demo/.test(location.hash);
+const RECORD = !!window.__RECORD__;          // set by the recorder: virtual clock, no rAF
+if (DEMO) document.documentElement.classList.add('demo');
+const rmq = matchMedia('(prefers-reduced-motion: reduce)');
+let reduced = rmq.matches;
+rmq.addEventListener && rmq.addEventListener('change', e => { reduced = e.matches; });
+
+/* ------------------------------------------------------------------ fit stage */
+const stage = $('#stage');
+function fit() {
+  const s = Math.min(innerWidth / 840, innerHeight / 1350, 1.6);
+  stage.style.transform = `translate(-50%,-50%) scale(${s})`;
+}
+fit(); addEventListener('resize', fit);
+
+/* ------------------------------------------------------------------ math */
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const prog = (t, a, b) => clamp((t - a) / (b - a));
+const lerp = (a, b, t) => a + (b - a) * t;
+const eOut = x => 1 - Math.pow(1 - x, 3);
+const eInOut = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+const eIn = x => x * x;
+const eBack = (x, s = 1.8) => 1 + (s + 1) * Math.pow(x - 1, 3) + s * Math.pow(x - 1, 2);
+const minJerk = x => x * x * x * (x * (x * 6 - 15) + 10);
+const bump = (t, a, b) => (t <= a || t >= b) ? 0 : Math.sin(Math.PI * (t - a) / (b - a));
+const qb = (p0, p1, p2, t) => { const u = 1 - t; return [u*u*p0[0] + 2*u*t*p1[0] + t*t*p2[0], u*u*p0[1] + 2*u*t*p1[1] + t*t*p2[1]]; };
+
+/* ------------------------------------------------------------------ choreography
+   Every visual and every sound is a pure function of time relative to its click,
+   so the live UI, the #demo loop, the frame recorder and the offline audio render
+   all read the same numbers. */
+const T = {
+  paper: [.02, .20], lift: [.04, .34], fold: [.30, .62], fly: [.60, 1.18], slide: [1.18, 1.44],
+  clipOpen: .98, clipClose: 1.46, openDur: .14, snapDur: .055,
+  okIn: [.06, .30], okOut: [1.60, 1.85], removeDur: .70, overflowRemove: 1.0,
+};
+const CONTACT = T.clipClose + T.snapDur;    // the moment metal meets paper
+const G = { rest: [350, 476], lifted: [445, 456], ctrl: [800, 500], preLand: [730, 976], land: [730, 904], scale: .68 };
+const SLOTS = [{ r: -1.6, x: 0, y: 0 }, { r: 1.5, x: 10, y: 9 }, { r: -.5, x: -7, y: 17 }];
+
+/* ------------------------------------------------------------------ sheets */
+const sheetLayer = $('#sheets');
+const inkHTML = $('#code').outerHTML;
+function makeSheet(k, c) {
+  const el = document.createElement('div');
+  el.className = 'sheet';
+  el.innerHTML =
+    `<div class="sh-shadow"></div><div class="sh-3d">
+      <div class="half L"><div class="paper"></div><div class="ink">${inkHTML}</div><div class="crease"></div></div>
+      <div class="half R"><div class="paper"></div><div class="ink">${inkHTML}</div><div class="shade"></div></div>
+    </div>`;
+  el.querySelectorAll('pre').forEach(p => p.removeAttribute('id'));
+  sheetLayer.appendChild(el);
+  const q = s => el.querySelector(s);
+  return { k, c, r: null, el, z: -1, vis: null,
+    shadow: q('.sh-shadow'), s3d: q('.sh-3d'), R: q('.half.R'),
+    papers: el.querySelectorAll('.paper'), crease: q('.crease'), shade: q('.shade') };
+}
+function renderSheet(s, t) {
+  const d = t - s.c;
+  const gone = d < 0 || (s.r != null && t >= s.r + T.removeDur);
+  const vis = gone ? 'hidden' : 'visible';
+  if (vis !== s.vis) { s.el.style.visibility = vis; s.vis = vis; }
+  if (gone) return;
+  const slot = SLOTS[s.k % 3];
+  const paperOp = eOut(prog(d, ...T.paper));
+  const lift = eOut(prog(d, ...T.lift));
+  const fold = eInOut(prog(d, ...T.fold));
+  const flyP = prog(d, ...T.fly), fly = eInOut(flyP);
+  const slide = eOut(prog(d, ...T.slide));
+  let x, y;
+  if (d < T.fly[0]) { x = G.rest[0] + 95 * fold; y = G.rest[1] - 16 * lift - 4 * fold; }
+  else if (d < T.slide[0]) { [x, y] = qb(G.lifted, G.ctrl, [G.preLand[0] + slot.x, G.preLand[1] + slot.y], fly); }
+  else { x = G.land[0] + slot.x; y = lerp(G.preLand[1], G.land[1], slide) + slot.y; }
+  const sc = lerp(1 + .02 * lift, G.scale, fly);
+  let rot = lerp(0, slot.r, fly) - 7 * Math.sin(Math.PI * flyP);
+  let op = 1;
+  if (s.r != null && t >= s.r) {           // oldest sheet slides out from under the clip
+    const g = prog(t, s.r, s.r + T.removeDur);
+    x += 46 * eIn(g); y += 300 * eIn(g); rot += 9 * g; op = 1 - eIn(prog(g, .5, 1));
+  }
+  // shadow "height": higher sheet -> softer, further, lighter shadow
+  const h = d < T.fly[0] ? lift : (d < T.slide[0] ? lerp(1, .1, fly) + .7 * Math.sin(Math.PI * flyP) : .1);
+  s.el.style.transform = `translate3d(${(x - 190).toFixed(2)}px,${(y - 184).toFixed(2)}px,0) rotate(${rot.toFixed(3)}deg) scale(${sc.toFixed(4)})`;
+  s.el.style.opacity = op.toFixed(3);
+  s.s3d.style.transform = `rotateX(${(9 * lift * (1 - fly)).toFixed(2)}deg)`;
+  s.R.style.transform = `rotateY(${(180 * fold).toFixed(2)}deg)`;
+  s.papers[0].style.opacity = s.papers[1].style.opacity = paperOp.toFixed(3);
+  s.crease.style.opacity = fold.toFixed(3);
+  s.shade.style.opacity = (fold * .9).toFixed(3);
+  s.shadow.style.transform = `translate(${(3 + 10 * h).toFixed(2)}px,${(4 + 24 * h).toFixed(2)}px) scale(${(1 - .5 * fold).toFixed(4)},${(1 + .03 * h).toFixed(4)})`;
+  s.shadow.style.opacity = (paperOp * (.30 - .09 * h)).toFixed(3);
+  const z = d < T.slide[0] ? 60 : 10 + s.k;   // dives under the clip only once it is clear of the jaw
+  if (z !== s.z) { s.el.style.zIndex = z; s.z = z; }
+}
+
+/* ------------------------------------------------------------------ clip */
+const jaw = $('#jaw'), jawShadow = $('#jawShadow');
+function clipEnv(t, e) {
+  if (t < e.o) return 0;
+  const up = eOut(prog(t, e.o, e.o + T.openDur));
+  if (t < e.c) return up;
+  const dc = t - e.c;
+  if (dc < T.snapDur) return up * (1 - eIn(dc / T.snapDur));
+  const db = dc - T.snapDur;                    // tiny rebound after the snap
+  if (db < .10) return .13 * Math.sin(Math.PI * db / .10);
+  if (db < .17) return .035 * Math.sin(Math.PI * (db - .10) / .07);
+  return 0;
+}
+function renderClip(t, events) {
+  let a = 0;
+  for (const e of events) a = Math.max(a, clipEnv(t, e));
+  jaw.style.transform = `perspective(520px) translateY(${(-3 * a).toFixed(2)}px) rotateX(${(40 * a).toFixed(2)}deg)`;
+  jawShadow.style.transform = `translateY(${(14 * a).toFixed(2)}px) scale(${(1 + .05 * a).toFixed(3)})`;
+  jawShadow.style.opacity = (.55 - .25 * a).toFixed(3);
+}
+
+/* ------------------------------------------------------------------ button + card */
+const btn = $('#copy');
+const bInner = btn.querySelector('.inner'), bOk = btn.querySelector('.okfill'), bHov = btn.querySelector('.hov');
+const bIdle = btn.querySelector('.idle'), bDone = btn.querySelector('.done'), bCheck = btn.querySelector('.check');
+const cardCode = $('#code');
+function renderButton(t, clicks, hover) {
+  let ok = 0, press = 0, pop = 1, dim = 0;
+  for (const c of clicks) {
+    const d = t - c;
+    if (d < -.08) continue;
+    press = Math.max(press, bump(d, -.06, .14));
+    const inP = prog(d, ...T.okIn), outP = prog(d, ...T.okOut);
+    const v = reduced ? (d >= 0 && d < T.okOut[0] ? 1 : 0) : eOut(inP) * (1 - eInOut(outP));
+    if (v > ok) { ok = v; pop = reduced ? 1 : lerp(.4, 1, eBack(prog(d, .10, .42))); }
+    if (!reduced) dim = Math.max(dim, bump(d, .04, .8));
+  }
+  bInner.style.transform = `scale(${(1 - .045 * press).toFixed(4)})`;
+  bOk.style.opacity = ok.toFixed(3);
+  bIdle.style.opacity = (1 - ok).toFixed(3);
+  bIdle.style.transform = `translateY(${(-12 * ok).toFixed(2)}px)`;
+  bDone.style.opacity = ok.toFixed(3);
+  bDone.style.transform = `translateY(${(12 * (1 - ok)).toFixed(2)}px)`;
+  bCheck.style.transform = `scale(${pop.toFixed(3)})`;
+  if (hover != null) bHov.style.opacity = hover.toFixed(3);
+  cardCode.style.opacity = (1 - .45 * dim).toFixed(3);
+}
+
+/* ------------------------------------------------------------------ sound
+   All synthesis is deterministic (seeded noise) and takes any BaseAudioContext,
+   so the same functions drive live playback and the OfflineAudioContext render. */
+function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+const noiseCache = new WeakMap();
+function noiseBuf(ctx) {
+  let b = noiseCache.get(ctx);
+  if (!b) {
+    const r = rng(7), len = ctx.sampleRate * 2;
+    b = ctx.createBuffer(1, len, ctx.sampleRate);
+    const d = b.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = r() * 2 - 1;
+    noiseCache.set(ctx, b);
+  }
+  return b;
+}
+function noise(ctx, when, dur, off) { const s = ctx.createBufferSource(); s.buffer = noiseBuf(ctx); s.start(when, (off || 0) * 1.5, dur); return s; }
+function panTo(ctx, out, p) { if (!ctx.createStereoPanner) return out; const n = ctx.createStereoPanner(); n.pan.value = p; n.connect(out); return n; }
+function filt(ctx, type, f, q) { const n = ctx.createBiquadFilter(); n.type = type; n.frequency.value = f; if (q != null) n.Q.value = q; return n; }
+function envGain(ctx, when, attack, peak, decay) {
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0.0001, when);
+  g.gain.linearRampToValueAtTime(peak, when + attack);
+  g.gain.exponentialRampToValueAtTime(0.0001, when + attack + decay);
+  return g;
+}
+const SFX = {
+  rustle(ctx, out, when, seed) {                 // paper peeling off the card
+    const r = rng(seed * 97 + 13), o = panTo(ctx, out, -.2);
+    noise(ctx, when, .34, r()).connect(filt(ctx, 'bandpass', 1900, .6)).connect(envGain(ctx, when, .03, .03, .28)).connect(o);
+    for (let i = 0; i < 9; i++) {
+      const tt = when + Math.pow(r(), 1.5) * .26, dur = .012 + r() * .03;
+      noise(ctx, tt, dur + .03, r()).connect(filt(ctx, 'bandpass', 2300 + r() * 4200, 1.2 + r() * 1.5))
+        .connect(envGain(ctx, tt, .002, .035 + r() * .055, dur)).connect(o);
+    }
+  },
+  whoosh(ctx, out, when, dur) {                  // soft air during the flight
+    const bp = filt(ctx, 'bandpass', 380, .8);
+    bp.frequency.setValueAtTime(380, when);
+    bp.frequency.exponentialRampToValueAtTime(1250, when + dur * .45);
+    bp.frequency.exponentialRampToValueAtTime(520, when + dur);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, when);
+    g.gain.linearRampToValueAtTime(.06, when + dur * .45);
+    g.gain.exponentialRampToValueAtTime(0.0001, when + dur);
+    let o = out;
+    if (ctx.createStereoPanner) { const p = ctx.createStereoPanner(); p.pan.setValueAtTime(-.25, when); p.pan.linearRampToValueAtTime(.35, when + dur); p.connect(out); o = p; }
+    noise(ctx, when, dur + .05, .3).connect(bp).connect(filt(ctx, 'lowpass', 3400)).connect(g).connect(o);
+  },
+  click(ctx, out, when, str) {                   // metal clip on paper and board
+    const o = panTo(ctx, out, .35);
+    noise(ctx, when, .03, .6).connect(filt(ctx, 'highpass', 2600)).connect(envGain(ctx, when, .0015, .2 * str, .018)).connect(o);
+    for (const [f, a, d] of [[2960, .05, .07], [4410, .034, .05], [6230, .024, .034], [8120, .014, .022]]) {
+      const osc = ctx.createOscillator(); osc.type = 'sine'; osc.frequency.value = f;
+      osc.connect(envGain(ctx, when, .001, a * str, d)).connect(o);
+      osc.start(when); osc.stop(when + d + .03);
+    }
+    const th = ctx.createOscillator(); th.type = 'sine';
+    th.frequency.setValueAtTime(210, when); th.frequency.exponentialRampToValueAtTime(115, when + .05);
+    th.connect(envGain(ctx, when, .002, .09 * str, .06)).connect(o);
+    th.start(when); th.stop(when + .1);
+  },
+  slide(ctx, out, when, dur, str) {              // paper sliding on wood
+    noise(ctx, when, dur + .05, .8).connect(filt(ctx, 'highpass', 300)).connect(filt(ctx, 'lowpass', 1700))
+      .connect(envGain(ctx, when, dur * .3, .03 * str, dur * .7)).connect(panTo(ctx, out, .35));
+  },
+};
+// event lists: [{t, play(ctx, out, when)}]
+function copySfx(c, seed) {
+  return [
+    { t: c + T.lift[0], play: (x, o, w) => SFX.rustle(x, o, w, seed) },
+    { t: c + T.fly[0] - .02, play: (x, o, w) => SFX.whoosh(x, o, w, .6) },
+    { t: c + T.clipOpen, play: (x, o, w) => SFX.click(x, o, w, .16) },
+    { t: c + T.slide[0], play: (x, o, w) => SFX.slide(x, o, w, .26, .8) },
+    { t: c + CONTACT, play: (x, o, w) => SFX.click(x, o, w, 1) },
+    { t: c + CONTACT + .10, play: (x, o, w) => SFX.click(x, o, w, .22) },
+  ];
+}
+const MASTER = 3;   // one output level shared by live playback and the offline render
+const removeSfx = r => ({ t: r, play: (x, o, w) => SFX.slide(x, o, w, .5, 1.1) });
+
+const Audio = {
+  ctx: null, master: null, muted: false,
+  ensure() {
+    if (!this.ctx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      this.ctx = new AC({ latencyHint: 'interactive' });
+      this.master = this.ctx.createGain();
+      this.master.gain.value = this.muted ? 0 : MASTER;
+      this.master.connect(this.ctx.destination);
+    }
+    if (this.ctx.state === 'suspended') this.ctx.resume();
+    return this.ctx;
+  },
+  // timeline seconds -> audio clock
+  play(list, nowT) {
+    if (this.muted || !this.ctx || this.ctx.state !== 'running') return;
+    const base = this.ctx.currentTime + (this.ctx.outputLatency ? 0 : 0);
+    for (const e of list) this.play1(e, base + Math.max(0, e.t - nowT));
+  },
+  play1(e, when) { try { e.play(this.ctx, this.master, when); } catch (err) { /* never block the UI on audio */ } },
+};
+const muteBtn = $('#mute');
+muteBtn.addEventListener('click', () => {
+  Audio.muted = !Audio.muted;
+  muteBtn.setAttribute('aria-pressed', String(Audio.muted));
+  muteBtn.setAttribute('aria-label', Audio.muted ? 'Unmute sound' : 'Mute sound');
+  if (Audio.master) Audio.master.gain.value = Audio.muted ? 0 : MASTER;
+  if (!Audio.muted) Audio.ensure();
+});
+
+/* ------------------------------------------------------------------ clipboard */
+function writeClipboard(text) {
+  const fallback = () => {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.setAttribute('readonly', ''); ta.style.cssText = 'position:fixed;opacity:0;left:-9999px';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); } catch (e) {}
+    ta.remove(); btn.focus({ preventScroll: true });
+  };
+  if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).catch(fallback);
+  else fallback();
+}
+
+/* ------------------------------------------------------------------ live (interactive) mode */
+const now = () => performance.now() / 1000;
+const clicks = [], sheets = [], clipEvents = [];
+let seq = 0, busyUntil = 0, running = false;
+const live = $('#live');
+
+function render(t, opts) {
+  for (const s of opts.sheets) renderSheet(s, t);
+  renderClip(t, opts.clip);
+  renderButton(t, opts.clicks, opts.hover);
+}
+function frame() {
+  const t = now();
+  render(t, { sheets, clip: clipEvents, clicks });
+  for (let i = sheets.length - 1; i >= 0; i--) {
+    const s = sheets[i];
+    if (s.r != null && t > s.r + T.removeDur + .05) { s.el.remove(); sheets.splice(i, 1); }
+  }
+  while (clipEvents.length && t > clipEvents[0].c + 1) clipEvents.shift();
+  while (clicks.length > 1 && t > clicks[0] + 3) clicks.shift();
+  if (t < busyUntil) requestAnimationFrame(frame); else running = false;
+}
+function kick(until) { busyUntil = Math.max(busyUntil, until); if (!running) { running = true; requestAnimationFrame(frame); } }
+
+function onCopy() {
+  writeClipboard(CODE);
+  live.textContent = ''; live.textContent = 'Copied to clipboard';
+  const c = now();
+  clicks.push(c);
+  if (reduced) { kick(c + T.okOut[1] + .1); return; }
+  Audio.ensure();
+  const k = seq++;
+  const s = makeSheet(k, c);
+  sheets.push(s);
+  clipEvents.push({ o: c + T.clipOpen, c: c + T.clipClose });
+  const sfx = copySfx(c, k + 1);
+  const alive = sheets.filter(x => x.r == null);
+  if (alive.length > 3) { alive[0].r = c + T.overflowRemove; sfx.push(removeSfx(alive[0].r)); }
+  Audio.play(sfx, c);
+  kick(c + CONTACT + .4);
+  kick(c + T.okOut[1] + .1);
+}
+if (!DEMO) btn.addEventListener('click', onCopy);
+
+/* ------------------------------------------------------------------ demo (#demo) */
+const L = 8.6;                                  // loop length, seconds
+const REST = [300, 1010], B1 = [815, 251], D1 = [772, 430], B2 = [826, 244], D2 = [640, 560];
+const DEMO_CLICKS = [1.08, 3.35];
+const CLEAR = { o: 6.36, c: 7.12, r: [6.48, 6.60] };
+const CUR = [ // [t0, t1, from, to, bend]
+  [0.25, 1.00, REST, B1, .16],
+  [1.35, 2.25, B1, D1, -.18],
+  [2.55, 3.25, D1, B2, .14],
+  [3.60, 4.50, B2, D2, .14],
+  [5.90, 6.95, D2, REST, -.12],
+];
+function cursorAt(t) {
+  let p = REST;
+  for (const [a, b, P0, P1, bend] of CUR) {
+    if (t >= b) { p = P1; continue; }
+    if (t > a) {
+      const u = minJerk((t - a) / (b - a));
+      const mx = (P0[0] + P1[0]) / 2, my = (P0[1] + P1[1]) / 2, dx = P1[0] - P0[0], dy = P1[1] - P0[1];
+      p = qb(P0, [mx - dy * bend, my + dx * bend], P1, u);
+    }
+    break;
+  }
+  // tiny hand tremor, periodic in L so the loop stays seamless
+  const w = 2 * Math.PI / L;
+  return [p[0] + 1.3 * Math.sin(w * 3 * t), p[1] + 1.0 * Math.sin(w * 4 * t + 1)];
+}
+let demoSheets = null, demoClip = null, demoSfx = null;
+function setupDemo() {
+  demoSheets = DEMO_CLICKS.map((c, i) => makeSheet(i, c));
+  demoSheets.forEach((s, i) => { s.r = CLEAR.r[i]; });
+  demoClip = DEMO_CLICKS.map(c => ({ o: c + T.clipOpen, c: c + T.clipClose })).concat([{ o: CLEAR.o, c: CLEAR.c }]);
+  demoSfx = [];
+  DEMO_CLICKS.forEach((c, i) => demoSfx.push(...copySfx(c, i + 1)));
+  demoSfx.push({ t: CLEAR.o, play: (x, o, w) => SFX.click(x, o, w, .16) });
+  CLEAR.r.forEach(r => demoSfx.push(removeSfx(r)));
+  demoSfx.push({ t: CLEAR.c + T.snapDur, play: (x, o, w) => SFX.click(x, o, w, .9) });
+  demoSfx.push({ t: CLEAR.c + T.snapDur + .10, play: (x, o, w) => SFX.click(x, o, w, .22) });
+  demoSfx.sort((a, b) => a.t - b.t);
+}
+const cursorEl = $('#cursor');
+function renderDemo(t) {
+  t = ((t % L) + L) % L;
+  const [cx, cy] = cursorAt(t);
+  let press = 0;
+  for (const c of DEMO_CLICKS) press = Math.max(press, bump(t - c, -.06, .14));
+  cursorEl.style.transform = `translate3d(${(cx - 3).toFixed(2)}px,${(cy - 3).toFixed(2)}px,0) scale(${(1 - .14 * press).toFixed(3)})`;
+  // button rect (stage px): 742..898 x 219..273
+  const dx = Math.max(742 - cx, 0, cx - 898), dy = Math.max(219 - cy, 0, cy - 273);
+  const hover = 1 - clamp(Math.hypot(dx, dy) / 10);
+  render(t, { sheets: demoSheets, clip: demoClip, clicks: DEMO_CLICKS, hover });
+}
+if (DEMO) {
+  setupDemo();
+  // recorder hooks
+  window.__demo = { L, contacts: DEMO_CLICKS.map(c => c + CONTACT).concat([CLEAR.c + T.snapDur]) };
+  window.__frame = t => { renderDemo(t); return true; };
+  window.__renderDemoAudio = async (sr = 48000) => {
+    const ctx = new OfflineAudioContext(2, Math.round(L * sr), sr);
+    const out = ctx.createGain(); out.gain.value = MASTER; out.connect(ctx.destination);
+    for (const e of demoSfx) e.play(ctx, out, e.t);
+    const buf = await ctx.startRendering();
+    const a = buf.getChannelData(0), b = buf.getChannelData(1), n = a.length;
+    const pcm = new Int16Array(n * 2);
+    let peak = 0;
+    for (let i = 0; i < n; i++) {
+      peak = Math.max(peak, Math.abs(a[i]), Math.abs(b[i]));
+      pcm[2 * i] = Math.max(-1, Math.min(1, a[i])) * 32767;
+      pcm[2 * i + 1] = Math.max(-1, Math.min(1, b[i])) * 32767;
+    }
+    let s = ''; const u8 = new Uint8Array(pcm.buffer);
+    for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000));
+    return { sr, frames: n, peak, b64: btoa(s) };
+  };
+  if (!RECORD) {
+    // live loop; sound plays once the page has had a user gesture
+    addEventListener('pointerdown', () => Audio.ensure());
+    addEventListener('keydown', () => Audio.ensure());
+    const t0 = now(); let prev = 0;
+    const LA = .1;
+    const loop = () => {
+      const el = now() - t0, t = el % L;
+      renderDemo(t);
+      if (Audio.ctx && Audio.ctx.state === 'running' && !Audio.muted) {
+        const a = prev + LA, b = el + LA;           // schedule events in (a, b] on the absolute clock
+        for (let cycle = Math.floor(a / L); cycle <= Math.floor(b / L); cycle++) {
+          for (const e of demoSfx) {
+            const abs = cycle * L + e.t;
+            if (abs > a && abs <= b) Audio.play1(e, Audio.ctx.currentTime + (abs - el));
+          }
+        }
+      }
+      prev = el;
+      requestAnimationFrame(loop);
+    };
+    requestAnimationFrame(loop);
+  } else {
+    renderDemo(0);
+  }
+} else {
+  render(0, { sheets, clip: clipEvents, clicks });
+}
+})();
+</script>
+</body>
+</html>

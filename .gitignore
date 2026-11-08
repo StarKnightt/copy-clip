@@ -1,0 +1,14 @@
+# Working notes
+PROMPT*.md
+SUMMARY.md
+
+# Scratch and backup files
+scratch/
+tmp/
+*.tmp
+*.bak
+*.orig
+*.swp
+*~
+.DS_Store
+Thumbs.db
