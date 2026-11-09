@@ -12,3 +12,8 @@ tmp/
 *~
 .DS_Store
 Thumbs.db
+
+# Windows and npm build output
+windows/bin/
+windows/obj/
+node_modules/
