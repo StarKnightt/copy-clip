@@ -44,6 +44,10 @@ Open [the local editor](http://localhost:3000/?editor=1) after serving the page,
 
 In editor mode, **Language** lets you change the display language and syntax highlighting. Automatic mode uses a recognized title extension to resolve the language, with the code as a fallback. Keep `locales.js` and the `vendor` folder alongside the HTML for all options. The vendored Highlight.js 11.12.0 bundle is [BSD 3-Clause](vendor/highlight-LICENSE.txt).
 
+## Windows app
+
+On Windows, install Node.js 22+, the .NET 10 SDK and WebView2 Evergreen, then run `npm install` and `npm start`. For portable builds see the [Windows guide](docs/WINDOWS.md).
+
 ## Usage
 
 The component fills its own page and scales to fit, so the easiest way to drop it in is an iframe:

@@ -283,6 +283,11 @@ html.demo .cursor{display:block}
       </label>
       <p id="direct-hint">Type directly on the card. Turn this off to use the Edit text and Apply steps again.</p>
     </div>
+    <div class="browser-setting" id="browser-setting" hidden>
+      <p id="browser-hint">Open Copy Clip in your browser. To move text between windows, copy it and press Ctrl+V in an editor.</p>
+      <button id="open-browser" type="button">Open in browser</button>
+      <p id="browser-status" role="status" hidden></p>
+    </div>
   </div>
   <div class="editor-actions"><button id="close-settings" type="button">Done</button></div>
 </dialog>
@@ -320,9 +325,10 @@ $('#code').innerHTML = HL.map((l, i) => `<span class="ln">${i + 1}</span>${l}`).
 
 /* ------------------------------------------------------------------ modes */
 const DEMO = /demo/.test(location.hash);
+const nativeHost = location.href === 'https://copyclip.example/index.html' ? window.chrome?.webview : null;
 const toolbar = $('#toolbar');
 const withToolbar = !DEMO && window.self === window.top &&
-  new URLSearchParams(location.search).get('editor') === '1' &&
+  (nativeHost || new URLSearchParams(location.search).get('editor') === '1') &&
   typeof $('#editor').showModal === 'function';
 if (withToolbar) {
   document.documentElement.classList.add('with-toolbar');
@@ -643,7 +649,27 @@ muteBtn.addEventListener('click', () => {
 });
 
 /* ------------------------------------------------------------------ clipboard */
+let requestId = 0;
+function requestNative(request) {
+  return new Promise(resolve => {
+    const id = ++requestId;
+    const finish = response => {
+      clearTimeout(timer);
+      nativeHost.removeEventListener('message', receive);
+      resolve(response);
+    };
+    const receive = event => {
+      if (event.data?.id === id) finish(event.data);
+    };
+    const timer = setTimeout(() => finish(null), 5000);
+    nativeHost.addEventListener('message', receive);
+    try { nativeHost.postMessage({ ...request, id }); }
+    catch { finish(null); }
+  });
+}
+
 async function writeClipboard(text) {
+  if (nativeHost) return (await requestNative({ type: 'copy', text }))?.copied === true;
   if (navigator.clipboard && window.isSecureContext) {
     try {
       await navigator.clipboard.writeText(text);
@@ -898,7 +924,7 @@ if (withToolbar) {
     titleInput.blur();
   });
   const languages = $('#languages'), codeLanguage = $('#code-language'), languageMenu = $('#language-menu');
-  const systemLocale = matchDisplayLanguage(navigator.language);
+  const systemLocale = matchDisplayLanguage(nativeHost ? window.copyClipSystemLanguage : navigator.language);
   for (const [id, name] of Object.entries(displayNames)) {
     if (id === 'en' || id === 'ko') continue;
     const option = new Option(name, id);
@@ -918,7 +944,7 @@ if (withToolbar) {
       edit: 'edit', 'editor-title': 'edit', 'editor-hint': 'hint',
       sample: 'sample', cancel: 'cancel', save: 'save',
       advanced: 'advanced', 'settings-title': 'advanced', 'direct-label': 'direct',
-      'direct-hint': 'directHint',
+      'direct-hint': 'directHint', 'browser-hint': 'browserHint', 'open-browser': 'browser',
       'close-settings': 'done', 'languages-title': 'language', 'display-language-label': 'displayLanguage',
       'code-language-label': 'codeLanguage', 'code-language-hint': 'codeLanguageHint',
       'close-languages': 'done', 'code-auto': 'automatic', 'code-plain': 'plain',
@@ -998,6 +1024,23 @@ if (withToolbar) {
     text = cardInput.value;
     updatePreview();
   });
+  if (nativeHost) {
+    const browserButton = $('#open-browser'), browserStatus = $('#browser-status');
+    $('#browser-setting').hidden = false;
+    browserButton.addEventListener('click', async () => {
+      browserButton.disabled = true;
+      browserStatus.hidden = true;
+      const result = await requestNative({ type: 'open-browser' });
+      browserButton.disabled = false;
+      if (result?.opened === true) {
+        settings.close();
+      } else {
+        browserStatus.textContent = words.browserError;
+        browserStatus.hidden = false;
+      }
+    });
+    $('#advanced').addEventListener('click', () => { browserStatus.hidden = true; });
+  }
   toolbar.hidden = false;
   updatePreview();
   fit();
@@ -1038,7 +1081,7 @@ async function onCopy() {
       }
       const pending = writeClipboard(text);
       if (!reduced) Audio.ensure();
-      if (!(await pending)) error = 'browserFailure';
+      if (!(await pending)) error = nativeHost ? 'failure' : 'browserFailure';
     }
   } finally {
     copying = false;

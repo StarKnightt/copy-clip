@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <Version>0.4.8</Version>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <Product>Copy Clip</Product>
+    <Description>Copy text with a paper-fold animation.</Description>
+    <DebugType Condition="'$(Configuration)' == 'Release'">none</DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4314.35" GeneratePathProperty="true" />
+    <Content Include="editor.html" Link="ui/editor.html" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="../index.html" Link="ui/index.html" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="../locales.js" Link="ui/locales.js" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="../vendor/highlight.min.js" Link="ui/vendor/highlight.min.js" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="../vendor/highlight-LICENSE.txt" Link="licenses/Highlight.js-LICENSE.txt" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="../LICENSE" Link="LICENSE" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="../THIRD-PARTY-NOTICES.md" Link="THIRD-PARTY-NOTICES.md" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="../docs/WINDOWS.md" Link="WINDOWS.md" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="../docs/WINDOWS.ko.md" Link="WINDOWS.ko.md" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="licenses/*.txt" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="$(PkgMicrosoft_Web_WebView2)/LICENSE.txt" Link="licenses/WebView2-SDK-LICENSE.txt" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="$(PkgMicrosoft_Web_WebView2)/NOTICE.txt" Link="licenses/WebView2-SDK-NOTICE.txt" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <Target Name="RemoveUnusedWebView2WpfReference" BeforeTargets="ResolveAssemblyReferences">
+    <ItemGroup>
+      <Reference Remove="@(Reference)" Condition="'%(Reference.Filename)' == 'Microsoft.Web.WebView2.Wpf'" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="IncludeDotNetNotices" AfterTargets="ComputeFilesToPublish" Condition="'$(SelfContained)' == 'true'">
+    <ItemGroup>
+      <_CoreRuntimePack Include="@(ResolvedRuntimePack)" Condition="'%(ResolvedRuntimePack.FrameworkName)' == 'Microsoft.NETCore.App'" />
+      <ResolvedFileToPublish Include="@(_CoreRuntimePack->'%(PackageDirectory)/LICENSE.TXT')"
+                             RelativePath="licenses/dotnet-LICENSE.txt" CopyToPublishDirectory="PreserveNewest" />
+      <ResolvedFileToPublish Include="@(_CoreRuntimePack->'%(PackageDirectory)/THIRD-PARTY-NOTICES.TXT')"
+                             RelativePath="licenses/dotnet-THIRD-PARTY-NOTICES.txt" CopyToPublishDirectory="PreserveNewest" />
+    </ItemGroup>
+  </Target>
+</Project>
