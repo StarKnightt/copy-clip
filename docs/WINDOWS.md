@@ -36,6 +36,8 @@ Click the card title to rename it. Press **Enter** or click away to apply, or **
 - Turn on **Advanced → Edit on the card** to type or paste directly on the card. The font, spacing, line numbers and code colors carry over from the preview, and highlighting updates as you type. Turn it off to return to **Edit text → Apply** with your current text. Each new window starts with direct editing off.
 - Select **Advanced → Open in browser** to open the bundled page using the Windows association for HTML files. It opens from disk with its own editable text. To move text to the browser, use **Copy** in the app and **Ctrl+V** in the browser's editor or any webpage input.
 
+- Select **Advanced → Desktop widget** to keep the code card and wooden clipboard above other windows. Type on the card and choose **Copy**. Drag the wooden clipboard, an empty part of the card header, or the background to move the widget. Right-click to adjust **Background transparency**, return to the **Normal window**, or **Quit** Copy Clip. The rounded background starts fully transparent unless you have a saved setting.
+
 ## Build a portable copy
 
 Use the [.NET 10 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/10.0) and run from the repository root.

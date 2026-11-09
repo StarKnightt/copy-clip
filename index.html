@@ -169,6 +169,28 @@ dialog textarea{display:block;width:100%;height:clamp(100px,30vh,250px);min-heig
 .with-toolbar pre.code .ln{position:absolute;top:0;right:calc(100% + 26px);
   min-width:28px;text-align:right;margin:0}
 
+.widget .toolbar,.widget .mute{display:none}
+.widget body{background:transparent}
+#widget-backdrop{display:none}
+.widget #widget-backdrop{display:block;position:fixed;inset:0;
+  border-radius:14px;background:radial-gradient(120% 85% at 50% 38%, var(--bg-hi) 0%, var(--bg) 55%, var(--bg-lo) 100%);opacity:var(--widget-background-opacity,0)}
+.widget #stage{pointer-events:none}
+.widget .card{pointer-events:auto}
+.widget [data-widget-drag]{pointer-events:auto;cursor:grab;user-select:none}
+.widget-menu{position:fixed;inset:auto;margin:0;padding:4px;
+  min-width:190px;max-width:calc(100% - 8px);
+  background:var(--card);color:var(--ink);border:1px solid #D8D2C7;border-radius:9px;
+  box-shadow:0 4px 14px rgba(45,35,20,.16)}
+html:not(.widget) .widget-menu{display:none}
+.widget-menu button{display:block;width:100%;font:inherit;color:inherit;background:none;border:0;border-radius:5px;
+  padding:9px 14px;text-align:start;cursor:pointer}
+.widget-menu button:hover,.widget-menu button:focus-visible{background:#ECE9E2;outline:none}
+.widget-transparency{display:block;margin:4px 0;padding:8px 14px;
+  border-block:1px solid var(--line);font-size:13px}
+.widget-transparency label{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.widget-transparency output{font-variant-numeric:tabular-nums;white-space:nowrap}
+.widget-transparency input{display:block;width:100%;margin:6px 0 0;accent-color:var(--ink)}
+
 /* ---------- demo cursor ---------- */
 .cursor{position:absolute;left:0;top:0;z-index:100;width:30px;height:34px;display:none;transform-origin:3px 3px;
   filter:drop-shadow(0 2px 3px rgba(0,0,0,.28));will-change:transform}
@@ -177,9 +199,10 @@ html.demo .cursor{display:block}
 </style>
 </head>
 <body>
+<div id="widget-backdrop" data-widget-drag aria-hidden="true"></div>
 <main id="stage">
   <section class="card" aria-label="Code snippet: debounce.js">
-    <div class="head">
+    <div class="head" data-widget-drag>
       <div class="file">
         <svg width="26" height="30" viewBox="0 0 26 30" aria-hidden="true"><path d="M3 1.5h13.5L24.5 9.5V27a1.5 1.5 0 0 1-1.5 1.5H3A1.5 1.5 0 0 1 1.5 27V3A1.5 1.5 0 0 1 3 1.5Z" fill="#F1EEE7" stroke="#B9B3A8" stroke-width="1.4"/><path d="M16.5 1.5V8a1.5 1.5 0 0 0 1.5 1.5h6.5" fill="none" stroke="#B9B3A8" stroke-width="1.4"/><path d="M6.5 15.5h11M6.5 19.5h8M6.5 23.5h10" stroke="#8A3B5C" stroke-width="1.8" stroke-linecap="round" opacity=".75"/></svg>
         <span class="fname" id="card-title">debounce.js</span>
@@ -206,9 +229,9 @@ html.demo .cursor{display:block}
     </div>
   </section>
 
-  <div class="board" aria-hidden="true"></div>
+  <div class="board" data-widget-drag aria-hidden="true"></div>
   <div class="jaw-shadow" id="jawShadow" aria-hidden="true"></div>
-  <svg class="clip-base" viewBox="0 0 150 60" aria-hidden="true">
+  <svg class="clip-base" data-widget-drag viewBox="0 0 150 60" aria-hidden="true">
     <defs>
       <linearGradient id="mb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#EEF0F1"/><stop offset=".45" stop-color="#C3C9CD"/><stop offset="1" stop-color="#8F979D"/></linearGradient>
       <linearGradient id="rv" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#7E868C"/></linearGradient>
@@ -220,7 +243,7 @@ html.demo .cursor{display:block}
     <circle cx="32" cy="36" r="5" fill="url(#rv)" stroke="#6E767C" stroke-width=".8"/>
     <circle cx="118" cy="36" r="5" fill="url(#rv)" stroke="#6E767C" stroke-width=".8"/>
   </svg>
-  <svg class="clip-jaw" id="jaw" viewBox="0 0 176 50" aria-hidden="true">
+  <svg class="clip-jaw" data-widget-drag id="jaw" viewBox="0 0 176 50" aria-hidden="true">
     <defs>
       <linearGradient id="jg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9AA2A8"/><stop offset=".22" stop-color="#F4F6F7"/><stop offset=".5" stop-color="#C9CFD3"/><stop offset=".85" stop-color="#9CA4AA"/><stop offset="1" stop-color="#727A80"/></linearGradient>
       <linearGradient id="jh" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".3" stop-color="#fff" stop-opacity=".95"/><stop offset=".7" stop-color="#fff" stop-opacity=".95"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
@@ -276,6 +299,11 @@ html.demo .cursor{display:block}
 <dialog id="settings" aria-labelledby="settings-title">
   <h2 id="settings-title">Advanced</h2>
   <div class="settings-options">
+    <div id="widget-setting" hidden>
+      <p id="widget-hint">Keep a small editor above other windows so you can type and copy right away.</p>
+      <button id="open-widget" type="button">Desktop widget</button>
+      <p id="widget-status" class="editor-error" role="status" hidden></p>
+    </div>
     <div class="browser-setting">
       <label class="setting">
         <input id="direct-edit" type="checkbox" aria-describedby="direct-hint">
@@ -296,6 +324,18 @@ html.demo .cursor{display:block}
   <svg class="off" width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><path d="M3 8.5h3.5L11 4.5v13l-4.5-4H3z" fill="currentColor"/><path d="M14.5 8.5l5 5M19.5 8.5l-5 5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
 </button>
 <div class="sr" id="live" aria-live="polite"></div>
+
+<div class="widget-menu" id="widget-menu" popover>
+  <button id="widget-restore" type="button" autofocus>Normal window</button>
+  <div class="widget-transparency">
+    <label for="widget-transparency">
+      <span id="widget-transparency-label">Background transparency</span>
+      <output id="widget-transparency-value" for="widget-transparency" aria-hidden="true">100%</output>
+    </label>
+    <input id="widget-transparency" type="range" min="0" max="100" value="100" aria-labelledby="widget-transparency-label">
+  </div>
+  <button id="widget-exit" type="button">Quit</button>
+</div>
 
 <script>
 (async () => {
@@ -391,7 +431,13 @@ rmq.addEventListener && rmq.addEventListener('change', e => { reduced = e.matche
 
 /* ------------------------------------------------------------------ fit stage */
 const stage = $('#stage');
+let widgetMode = false;
 function fit() {
+  if (widgetMode) {
+    const scale = Math.min(innerWidth / 790, innerHeight / 985, 1.6);
+    stage.style.transform = 'translate(-50%, -50%) scale(' + scale + ')';
+    return;
+  }
   if (!withToolbar) {
     const scale = Math.min(innerWidth / 840, innerHeight / 1350, 1.6);
     stage.style.transform = "translate(-50%,-50%) scale(" + scale + ")";
@@ -948,7 +994,8 @@ if (withToolbar) {
       'close-settings': 'done', 'languages-title': 'language', 'display-language-label': 'displayLanguage',
       'code-language-label': 'codeLanguage', 'code-language-hint': 'codeLanguageHint',
       'close-languages': 'done', 'code-auto': 'automatic', 'code-plain': 'plain',
-      'system-language': 'systemLanguage'
+      'system-language': 'systemLanguage', 'open-widget': 'widget', 'widget-hint': 'widgetHint',
+      'widget-restore': 'normalWindow', 'widget-transparency-label': 'widgetTransparency', 'widget-exit': 'widgetExit'
     })) $(`#${id}`).textContent = words[key];
     cardInput.setAttribute('aria-label', words.direct);
     titleInput.setAttribute('aria-label', words.cardTitle);
@@ -1012,7 +1059,7 @@ if (withToolbar) {
     if (directEdit.checked) cardInput.focus();
   });
   function applyEditingMode() {
-    const editable = directEdit.checked;
+    const editable = widgetMode || directEdit.checked;
     if (editable && cardInput.hidden) cardInput.value = text;
     cardInput.hidden = !editable;
     cardCode.setAttribute('aria-hidden', String(editable));
@@ -1025,6 +1072,73 @@ if (withToolbar) {
     updatePreview();
   });
   if (nativeHost) {
+    const widgetButton = $('#open-widget'), widgetStatus = $('#widget-status');
+    const widgetMenu = $('#widget-menu'), widgetRestore = $('#widget-restore');
+    $('#advanced').addEventListener('click', () => { widgetStatus.hidden = true; });
+    $('#widget-setting').hidden = false;
+    const transparency = $('#widget-transparency');
+    const transparencyValue = $('#widget-transparency-value');
+    const transparencyKey = 'copyclip.widgetTransparency';
+    function updateTransparency() {
+      transparencyValue.value = transparency.value + '%';
+      document.documentElement.style.setProperty('--widget-background-opacity', 1 - transparency.valueAsNumber / 100);
+    }
+    try { transparency.value = localStorage.getItem(transparencyKey) ?? transparency.defaultValue; } catch {}
+    updateTransparency();
+    transparency.addEventListener('input', updateTransparency);
+    transparency.addEventListener('change', () => {
+      try { localStorage.setItem(transparencyKey, transparency.value); } catch {}
+    });
+    function applyWidgetMode(enabled) {
+      widgetMode = enabled;
+      document.documentElement.classList.toggle('widget', enabled);
+      applyEditingMode();
+      fit();
+      if (enabled) {
+        settings.close();
+        cardInput.focus();
+      } else if (directEdit.checked) {
+        cardInput.focus();
+      } else {
+        $('#advanced').focus();
+      }
+    }
+    async function switchWidget(enabled) {
+      widgetButton.disabled = widgetRestore.disabled = true;
+      const result = await requestNative({ type: 'widget', enabled });
+      widgetButton.disabled = widgetRestore.disabled = false;
+      if (result?.widget === enabled) {
+        if (widgetMenu.matches(':popover-open')) widgetMenu.hidePopover();
+        applyWidgetMode(enabled);
+      } else if (settings.open) {
+        widgetStatus.textContent = words.widgetError;
+        widgetStatus.hidden = false;
+      } else {
+        live.textContent = words.widgetError;
+      }
+    }
+    widgetButton.addEventListener('click', () => switchWidget(true));
+    widgetRestore.addEventListener('click', () => switchWidget(false));
+    $('#widget-exit').addEventListener('click', () => requestNative({ type: 'quit-widget' }));
+    function moveWidget(event) {
+      if (!widgetMode || event.button !== 0 || event.target.closest('button,input') ||
+          widgetMenu.matches(':popover-open')) return;
+      titleInput.blur();
+      event.preventDefault();
+      requestNative({ type: 'move-widget' });
+    }
+    for (const grip of document.querySelectorAll('[data-widget-drag]')) {
+      grip.addEventListener('pointerdown', moveWidget);
+    }
+    document.addEventListener('contextmenu', event => {
+      if (!widgetMode || (event.shiftKey && event.button === 2)) return;
+      event.preventDefault();
+      if (!widgetMenu.matches(':popover-open')) widgetMenu.showPopover();
+      const { offsetWidth, offsetHeight } = widgetMenu;
+      widgetMenu.style.left = clamp(event.clientX, 0, Math.max(0, innerWidth - offsetWidth - 4)) + 'px';
+      widgetMenu.style.top = clamp(event.clientY, 0, Math.max(0, innerHeight - offsetHeight - 4)) + 'px';
+      widgetRestore.focus();
+    });
     const browserButton = $('#open-browser'), browserStatus = $('#browser-status');
     $('#browser-setting').hidden = false;
     browserButton.addEventListener('click', async () => {

@@ -24,6 +24,10 @@ internal sealed class CopyClipWindow : Form
     private const string AppPage = "https://" + Host + "/index.html";
     private readonly WebView2 view = new() { Dock = DockStyle.Fill, DefaultBackgroundColor = Color.Transparent };
     private readonly string pagePath = Path.Combine(AppContext.BaseDirectory, "ui", "index.html");
+    private bool widgetMode;
+    private Rectangle normalBounds;
+    private FormWindowState normalState;
+
     public CopyClipWindow()
     {
         Text = "Copy Clip";
@@ -117,11 +121,96 @@ internal sealed class CopyClipWindow : Form
         {
             browser.PostWebMessageAsJson(JsonSerializer.Serialize(new { id = requestId, opened = OpenBrowser() }));
         }
+        else if (type.ValueEquals("widget") && request.TryGetProperty("enabled", out var enabled) &&
+                 enabled.ValueKind is JsonValueKind.True or JsonValueKind.False)
+        {
+            SetWidgetMode(enabled.GetBoolean());
+            browser.PostWebMessageAsJson(JsonSerializer.Serialize(new { id = requestId, widget = widgetMode }));
+        }
+        else if (widgetMode && type.ValueEquals("move-widget"))
+        {
+            browser.PostWebMessageAsJson(JsonSerializer.Serialize(new { id = requestId }));
+            BeginInvoke(MoveWidget);
+        }
+        else if (widgetMode && type.ValueEquals("quit-widget"))
+        {
+            BeginInvoke(Close);
+        }
         else if (type.ValueEquals("copy") && request.TryGetProperty("text", out var text) && text.ValueKind == JsonValueKind.String)
         {
             browser.PostWebMessageAsJson(JsonSerializer.Serialize(new { id = requestId, copied = CopyToClipboard(text) }));
         }
     }
+
+    private void SetWidgetMode(bool enabled)
+    {
+        if (enabled == widgetMode)
+            return;
+
+        if (enabled)
+        {
+            normalState = WindowState;
+            normalBounds = normalState == FormWindowState.Normal ? Bounds : RestoreBounds;
+        }
+
+        // The extended DWM frame lets transparent WebView pixels blend with the desktop.
+        var margins = enabled ? new FrameMargins(-1, -1, -1, -1) : default;
+        if (DwmExtendFrameIntoClientArea(Handle, in margins) < 0)
+            return;
+        BackColor = enabled ? Color.Black : SystemColors.Control;
+
+        if (enabled)
+        {
+            var area = Screen.FromControl(this).WorkingArea;
+            var size = LogicalToDeviceUnits(new Size(440, 560));
+            var inset = LogicalToDeviceUnits(16);
+            WindowState = FormWindowState.Normal;
+            MinimumSize = LogicalToDeviceUnits(new Size(360, 440));
+            FormBorderStyle = FormBorderStyle.None;
+            MaximizeBox = false;
+            Bounds = new Rectangle(Math.Max(area.Left, area.Right - size.Width - inset),
+                Math.Max(area.Top, area.Bottom - size.Height - inset),
+                Math.Min(area.Width, size.Width), Math.Min(area.Height, size.Height));
+        }
+        else
+        {
+            FormBorderStyle = FormBorderStyle.Sizable;
+            MaximizeBox = true;
+            MinimumSize = LogicalToDeviceUnits(new Size(440, 550));
+            Bounds = normalBounds;
+            WindowState = normalState;
+        }
+
+        TopMost = enabled;
+        widgetMode = enabled;
+    }
+
+    private void MoveWidget()
+    {
+        if (!widgetMode || MouseButtons != MouseButtons.Left)
+            return;
+
+        // Hand off to the Windows caption drag loop, including per-monitor DPI handling.
+        const int leftButtonDownInFrame = 0x00A1;
+        const int caption = 2;
+        var point = Cursor.Position;
+        var packedPoint = (point.Y << 16) | (point.X & 0xFFFF);
+        ReleaseCapture();
+        SendMessage(Handle, leftButtonDownInFrame, caption, packedPoint);
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private readonly record struct FrameMargins(int Left, int Right, int Top, int Bottom);
+
+    [DllImport("dwmapi.dll")]
+    private static extern int DwmExtendFrameIntoClientArea(nint window, in FrameMargins margins);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool ReleaseCapture();
+
+    [DllImport("user32.dll", EntryPoint = "SendMessageW")]
+    private static extern nint SendMessage(nint window, int message, nint wParam, nint lParam);
 
     private bool OpenBrowser()
     {
