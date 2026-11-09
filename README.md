@@ -38,6 +38,10 @@ Then open `http://localhost:3000`. Any static server works.
 
 > **Why a server?** Opening the file directly works too, but `navigator.clipboard` needs a secure context. On `file://` the component falls back to the older `execCommand('copy')` path.
 
+## Optional editor
+
+Open [the local editor](http://localhost:3000/?editor=1) after serving the page, or append `?editor=1` to the page URL. Use **Edit text** to update the snippet, or **Advanced → Edit on the card** to type directly. Click the card title to rename it. The preview shows up to eight lines and **Copy** sends the full text.
+
 ## Usage
 
 The component fills its own page and scales to fit, so the easiest way to drop it in is an iframe:
