@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Paper Copy</title>
+<title>Copy Clip</title>
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -47,6 +47,20 @@ pre.code{margin:0;padding:32px 36px;font:400 24px/38px 'JetBrains Mono',monospac
 pre.code .ln{display:inline-block;width:28px;text-align:right;margin-right:26px;color:#C2BDB3;user-select:none}
 pre.code .k{color:var(--kw)} pre.code .f{color:var(--fn)} pre.code .n{color:var(--num)}
 pre.code .c{color:var(--com);font-style:italic}
+
+pre.code :where(span[class^="hljs-"]){color:var(--fn)}
+pre.code :is(.k,.hljs-keyword,.hljs-selector-tag,.hljs-operator){color:var(--kw)}
+pre.code :is(.f,.hljs-title,.hljs-built_in,.hljs-type,.hljs-tag){color:var(--fn)}
+pre.code :is(.n,.hljs-number,.hljs-literal){color:var(--num)}
+pre.code :is(.c,.hljs-comment,.hljs-quote){color:var(--com);font-style:italic}
+pre.code :is(.hljs-string,.hljs-regexp,.hljs-symbol,.hljs-addition){color:#785329}
+pre.code :is(.hljs-attr,.hljs-attribute,.hljs-variable,.hljs-name,.hljs-meta,
+  .hljs-selector-class,.hljs-selector-id,.hljs-property){color:#4E5480}
+pre.code .hljs-deletion{color:#923C37}
+
+.language-field{display:block;margin:0 0 14px;font-weight:600}
+.language-field select{display:block;width:100%;margin-top:6px;font-weight:400}
+.language-field select{font:inherit;padding:8px}
 
 /* ---------- copy button ---------- */
 .copy{position:relative;width:156px;height:54px;border:0;padding:0;border-radius:15px;background:none;
@@ -104,6 +118,79 @@ html:not(.demo) .copy:hover .hov{opacity:1;transition:opacity .15s}
 .mute:focus-visible{outline:3px solid var(--ring);outline-offset:3px}
 .mute .off{display:none} .mute[aria-pressed="true"] .on{display:none} .mute[aria-pressed="true"] .off{display:block}
 
+.toolbar{position:fixed;z-index:90;top:22px;left:22px;right:78px;display:flex;flex-wrap:wrap;gap:8px}
+.toolbar[hidden]{display:none}
+.toolbar button,dialog button{
+  background:var(--card);color:var(--ink);font:inherit;border:1px solid #BDB7AC;
+  border-radius:8px;padding:8px 12px;min-height:42px
+}
+.toolbar button,dialog button{cursor:pointer}
+dialog{width:min(560px,calc(100% - 32px));max-height:calc(100% - 32px);padding:22px;
+  color:var(--ink);background:var(--card);border:1px solid #BDB7AC;border-radius:16px}
+dialog:not([open]){display:none}
+dialog::backdrop{background:rgba(35,33,29,.42)}
+dialog h2{font-size:20px;margin:0 0 8px}
+dialog p{margin:0 0 12px}
+dialog .editor-error{color:#792E25}
+dialog textarea{display:block;width:100%;height:clamp(100px,30vh,250px);min-height:80px;
+  resize:vertical;padding:10px;margin-bottom:12px;font:14px/1.5 'JetBrains Mono',monospace;color:inherit}
+.editor-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.editor-actions .primary{background:var(--ink);color:var(--card)}
+.setting{display:flex;align-items:center;gap:10px;font-weight:600;min-height:42px;cursor:pointer}
+.setting input{width:18px;height:18px;margin:0;accent-color:var(--ok)}
+.browser-setting{border-top:1px solid #D8D2C7;margin:16px 0;padding:14px 0 0}
+.browser-setting p:last-child{margin:8px 0 0}
+.browser-setting [role="status"]{color:#792E25}
+#settings[open]{display:flex;flex-direction:column;overflow:hidden}
+.settings-options{min-height:0;overflow:auto}
+#settings .editor-actions{flex-shrink:0;padding-top:8px}
+#card-title-input{field-sizing:content;min-width:4ch;max-width:320px;padding:4px 0;
+  border:0;border-radius:0;background:transparent;color:inherit;cursor:text}
+#card-title-input:not(:focus){text-overflow:ellipsis}
+#card-title-input:hover,#card-title-input:focus{box-shadow:0 1px var(--muted)}
+#card-title-input:focus{outline:1px solid transparent}
+
+.with-toolbar .head{gap:14px}
+.with-toolbar .file{min-width:0}
+.with-toolbar .copy{flex:none}
+.with-toolbar .body{overflow:hidden;border-radius:0 0 24px 24px}
+.with-toolbar pre.code,.card-input{margin:0;padding:32px 36px 32px 90px;
+  font:400 24px/38px 'JetBrains Mono',monospace;white-space:pre;font-variant-ligatures:none;tab-size:4}
+.card-input{position:absolute;inset:0;width:100%;height:100%;resize:none;overflow:auto;
+  border:0;outline:0;border-radius:0;background:transparent;color:transparent;caret-color:var(--ink);
+  scrollbar-width:none;forced-color-adjust:none}
+.card-input::-webkit-scrollbar{display:none}
+.card-input::selection{background:rgba(47,107,79,.23);color:transparent}
+@media (forced-colors:active){
+  .card-input{caret-color:CanvasText}
+  .card-input::selection{background:color-mix(in srgb, Highlight 40%, transparent)}
+}
+.code-line{display:block;position:relative;min-height:38px}
+.with-toolbar pre.code .ln{position:absolute;top:0;right:calc(100% + 26px);
+  min-width:28px;text-align:right;margin:0}
+
+.widget .toolbar,.widget .mute{display:none}
+.widget body{background:transparent}
+#widget-backdrop{display:none}
+.widget #widget-backdrop{display:block;position:fixed;inset:0;
+  border-radius:14px;background:radial-gradient(120% 85% at 50% 38%, var(--bg-hi) 0%, var(--bg) 55%, var(--bg-lo) 100%);opacity:var(--widget-background-opacity,0)}
+.widget #stage{pointer-events:none}
+.widget .card{pointer-events:auto}
+.widget [data-widget-drag]{pointer-events:auto;cursor:grab;user-select:none}
+.widget-menu{position:fixed;inset:auto;margin:0;padding:4px;
+  min-width:190px;max-width:calc(100% - 8px);
+  background:var(--card);color:var(--ink);border:1px solid #D8D2C7;border-radius:9px;
+  box-shadow:0 4px 14px rgba(45,35,20,.16)}
+html:not(.widget) .widget-menu{display:none}
+.widget-menu button{display:block;width:100%;font:inherit;color:inherit;background:none;border:0;border-radius:5px;
+  padding:9px 14px;text-align:start;cursor:pointer}
+.widget-menu button:hover,.widget-menu button:focus-visible{background:#ECE9E2;outline:none}
+.widget-transparency{display:block;margin:4px 0;padding:8px 14px;
+  border-block:1px solid var(--line);font-size:13px}
+.widget-transparency label{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.widget-transparency output{font-variant-numeric:tabular-nums;white-space:nowrap}
+.widget-transparency input{display:block;width:100%;margin:6px 0 0;accent-color:var(--ink)}
+
 /* ---------- demo cursor ---------- */
 .cursor{position:absolute;left:0;top:0;z-index:100;width:30px;height:34px;display:none;transform-origin:3px 3px;
   filter:drop-shadow(0 2px 3px rgba(0,0,0,.28));will-change:transform}
@@ -112,12 +199,14 @@ html.demo .cursor{display:block}
 </style>
 </head>
 <body>
+<div id="widget-backdrop" data-widget-drag aria-hidden="true"></div>
 <main id="stage">
   <section class="card" aria-label="Code snippet: debounce.js">
-    <div class="head">
+    <div class="head" data-widget-drag>
       <div class="file">
         <svg width="26" height="30" viewBox="0 0 26 30" aria-hidden="true"><path d="M3 1.5h13.5L24.5 9.5V27a1.5 1.5 0 0 1-1.5 1.5H3A1.5 1.5 0 0 1 1.5 27V3A1.5 1.5 0 0 1 3 1.5Z" fill="#F1EEE7" stroke="#B9B3A8" stroke-width="1.4"/><path d="M16.5 1.5V8a1.5 1.5 0 0 0 1.5 1.5h6.5" fill="none" stroke="#B9B3A8" stroke-width="1.4"/><path d="M6.5 15.5h11M6.5 19.5h8M6.5 23.5h10" stroke="#8A3B5C" stroke-width="1.8" stroke-linecap="round" opacity=".75"/></svg>
-        <span class="fname">debounce.js</span>
+        <span class="fname" id="card-title">debounce.js</span>
+        <input class="fname" id="card-title-input" type="text" aria-label="Card title" maxlength="120" autocomplete="off" spellcheck="false" dir="auto" hidden>
         <span class="lang">JS</span>
       </div>
       <button class="copy" id="copy" type="button" aria-label="Copy code">
@@ -134,12 +223,15 @@ html.demo .cursor{display:block}
         </span>
       </button>
     </div>
-    <div class="body" id="codebody"><pre class="code" id="code"></pre></div>
+    <div class="body" id="codebody">
+      <pre class="code" id="code"></pre>
+      <textarea class="card-input" id="card-input" aria-label="Edit text on the card" spellcheck="false" wrap="off" hidden></textarea>
+    </div>
   </section>
 
-  <div class="board" aria-hidden="true"></div>
+  <div class="board" data-widget-drag aria-hidden="true"></div>
   <div class="jaw-shadow" id="jawShadow" aria-hidden="true"></div>
-  <svg class="clip-base" viewBox="0 0 150 60" aria-hidden="true">
+  <svg class="clip-base" data-widget-drag viewBox="0 0 150 60" aria-hidden="true">
     <defs>
       <linearGradient id="mb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#EEF0F1"/><stop offset=".45" stop-color="#C3C9CD"/><stop offset="1" stop-color="#8F979D"/></linearGradient>
       <linearGradient id="rv" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#7E868C"/></linearGradient>
@@ -151,7 +243,7 @@ html.demo .cursor{display:block}
     <circle cx="32" cy="36" r="5" fill="url(#rv)" stroke="#6E767C" stroke-width=".8"/>
     <circle cx="118" cy="36" r="5" fill="url(#rv)" stroke="#6E767C" stroke-width=".8"/>
   </svg>
-  <svg class="clip-jaw" id="jaw" viewBox="0 0 176 50" aria-hidden="true">
+  <svg class="clip-jaw" data-widget-drag id="jaw" viewBox="0 0 176 50" aria-hidden="true">
     <defs>
       <linearGradient id="jg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9AA2A8"/><stop offset=".22" stop-color="#F4F6F7"/><stop offset=".5" stop-color="#C9CFD3"/><stop offset=".85" stop-color="#9CA4AA"/><stop offset="1" stop-color="#727A80"/></linearGradient>
       <linearGradient id="jh" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".3" stop-color="#fff" stop-opacity=".95"/><stop offset=".7" stop-color="#fff" stop-opacity=".95"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
@@ -166,14 +258,87 @@ html.demo .cursor{display:block}
   <svg class="cursor" id="cursor" viewBox="0 0 30 34" aria-hidden="true"><path d="M3 3 L3 26.5 L9.2 20.6 L13.6 30.4 L18.1 28.4 L13.8 18.9 L22.3 18.9 Z" fill="#fff" stroke="#1A1814" stroke-width="1.7" stroke-linejoin="round"/></svg>
 </main>
 
+<div class="toolbar" id="toolbar" hidden>
+  <button id="edit" type="button">Edit text</button>
+  <button id="language-menu" type="button" aria-haspopup="dialog">
+    <span id="language-current">English</span> <span aria-hidden="true">▾</span>
+  </button>
+  <button id="advanced" type="button" aria-haspopup="dialog">Advanced</button>
+</div>
+<dialog id="languages" aria-labelledby="languages-title">
+  <h2 id="languages-title">Language</h2>
+  <label class="language-field">
+    <span id="display-language-label">Display language</span>
+    <select id="language">
+      <option id="system-language" value="system">System language</option>
+      <option value="en" lang="en">English</option>
+      <option value="ko" lang="ko">한국어</option>
+    </select>
+  </label>
+  <label class="language-field">
+    <span id="code-language-label">Code language</span>
+    <select id="code-language" aria-describedby="code-language-hint">
+      <option id="code-auto" value="auto">Automatic</option>
+      <option id="code-plain" value="plain">Plain text</option>
+    </select>
+  </label>
+  <p id="code-language-hint">Automatic detects the language from the code first. A known extension in the card title sets the final language. You can also choose a language manually.</p>
+  <div class="editor-actions"><button id="close-languages" type="button">Done</button></div>
+</dialog>
+<dialog id="editor" aria-labelledby="editor-title" aria-describedby="editor-hint">
+  <h2 id="editor-title">Edit text</h2>
+  <p id="editor-hint">The preview shows the first 8 lines. Copy writes the full text.</p>
+  <textarea id="input" aria-labelledby="editor-title" spellcheck="false" autofocus></textarea>
+  <p class="editor-error" id="editor-error" role="alert" hidden></p>
+  <div class="editor-actions">
+    <button id="sample" type="button">Use sample</button>
+    <button id="cancel" type="button">Cancel</button>
+    <button id="save" class="primary" type="button">Apply</button>
+  </div>
+</dialog>
+<dialog id="settings" aria-labelledby="settings-title">
+  <h2 id="settings-title">Advanced</h2>
+  <div class="settings-options">
+    <div id="widget-setting" hidden>
+      <p id="widget-hint">Keep a small editor above other windows so you can type and copy right away.</p>
+      <button id="open-widget" type="button">Desktop widget</button>
+      <p id="widget-status" class="editor-error" role="status" hidden></p>
+    </div>
+    <div class="browser-setting">
+      <label class="setting">
+        <input id="direct-edit" type="checkbox" aria-describedby="direct-hint">
+        <span id="direct-label">Edit on the card</span>
+      </label>
+      <p id="direct-hint">Type directly on the card. Turn this off to use the Edit text and Apply steps again.</p>
+    </div>
+    <div class="browser-setting" id="browser-setting" hidden>
+      <p id="browser-hint">Open Copy Clip in your browser. To move text between windows, copy it and press Ctrl+V in an editor.</p>
+      <button id="open-browser" type="button">Open in browser</button>
+      <p id="browser-status" role="status" hidden></p>
+    </div>
+  </div>
+  <div class="editor-actions"><button id="close-settings" type="button">Done</button></div>
+</dialog>
 <button class="mute" id="mute" type="button" aria-pressed="false" aria-label="Mute sound">
   <svg class="on" width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><path d="M3 8.5h3.5L11 4.5v13l-4.5-4H3z" fill="currentColor"/><path d="M14 8a4 4 0 0 1 0 6M16.5 5.5a7.5 7.5 0 0 1 0 11" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
   <svg class="off" width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><path d="M3 8.5h3.5L11 4.5v13l-4.5-4H3z" fill="currentColor"/><path d="M14.5 8.5l5 5M19.5 8.5l-5 5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
 </button>
 <div class="sr" id="live" aria-live="polite"></div>
 
+<div class="widget-menu" id="widget-menu" popover>
+  <button id="widget-restore" type="button" autofocus>Normal window</button>
+  <div class="widget-transparency">
+    <label for="widget-transparency">
+      <span id="widget-transparency-label">Background transparency</span>
+      <output id="widget-transparency-value" for="widget-transparency" aria-hidden="true">100%</output>
+    </label>
+    <input id="widget-transparency" type="range" min="0" max="100" value="100" aria-labelledby="widget-transparency-label">
+  </div>
+  <button id="widget-exit" type="button">Quit</button>
+</div>
+
 <script>
-(() => {
+(async () => {
 'use strict';
 const $ = s => document.querySelector(s);
 
@@ -200,6 +365,64 @@ $('#code').innerHTML = HL.map((l, i) => `<span class="ln">${i + 1}</span>${l}`).
 
 /* ------------------------------------------------------------------ modes */
 const DEMO = /demo/.test(location.hash);
+const nativeHost = location.href === 'https://copyclip.example/index.html' ? window.chrome?.webview : null;
+const toolbar = $('#toolbar');
+const withToolbar = !DEMO && window.self === window.top &&
+  (nativeHost || new URLSearchParams(location.search).get('editor') === '1') &&
+  typeof $('#editor').showModal === 'function';
+if (withToolbar) {
+  document.documentElement.classList.add('with-toolbar');
+  function loadScript(source) {
+    return new Promise(resolve => {
+      const script = document.createElement('script');
+      script.src = source;
+      script.onload = script.onerror = resolve;
+      document.head.append(script);
+    });
+  }
+  await Promise.all([loadScript('locales.js'), loadScript('vendor/highlight.min.js')]);
+}
+const highlighter = withToolbar ? window.hljs : null;
+const HIGHLIGHT_LIMIT = 100_000;
+const extensionLanguages = new Map(Object.entries({
+  bash: 'sh bash zsh',
+  c: 'c',
+  cpp: 'h cc cpp cxx c++ hh hpp hxx',
+  csharp: 'cs',
+  css: 'css',
+  dart: 'dart',
+  diff: 'diff patch',
+  go: 'go',
+  ini: 'ini toml',
+  java: 'java',
+  javascript: 'js cjs mjs jsx',
+  json: 'json jsonc',
+  kotlin: 'kt kts',
+  lua: 'lua',
+  makefile: 'mk',
+  markdown: 'md markdown',
+  objectivec: 'mm',
+  perl: 'pl pm',
+  php: 'php',
+  plaintext: 'txt text',
+  powershell: 'ps1 psm1 psd1',
+  python: 'py pyw pyi',
+  r: 'r',
+  ruby: 'rb',
+  rust: 'rs',
+  scala: 'scala sc',
+  scss: 'scss',
+  sql: 'sql',
+  swift: 'swift',
+  typescript: 'ts cts mts tsx',
+  xml: 'html htm xhtml xml svg',
+  yaml: 'yaml yml'
+}).flatMap(([language, extensions]) => extensions.split(' ').map(extension => [extension, language])));
+const autoLanguages = [
+  'bash', 'cpp', 'csharp', 'css', 'go', 'java', 'javascript', 'json', 'php',
+  'python', 'ruby', 'rust', 'sql', 'typescript', 'xml', 'yaml'
+];
+const codeLanguageName = id => highlighter?.getLanguage(id)?.name ?? id;
 const RECORD = !!window.__RECORD__;          // set by the recorder: virtual clock, no rAF
 if (DEMO) document.documentElement.classList.add('demo');
 const rmq = matchMedia('(prefers-reduced-motion: reduce)');
@@ -208,10 +431,23 @@ rmq.addEventListener && rmq.addEventListener('change', e => { reduced = e.matche
 
 /* ------------------------------------------------------------------ fit stage */
 const stage = $('#stage');
+let widgetMode = false;
 function fit() {
-  const s = Math.min(innerWidth / 840, innerHeight / 1350, 1.6);
-  stage.style.transform = `translate(-50%,-50%) scale(${s})`;
+  if (widgetMode) {
+    const scale = Math.min(innerWidth / 790, innerHeight / 985, 1.6);
+    stage.style.transform = 'translate(-50%, -50%) scale(' + scale + ')';
+    return;
+  }
+  if (!withToolbar) {
+    const scale = Math.min(innerWidth / 840, innerHeight / 1350, 1.6);
+    stage.style.transform = "translate(-50%,-50%) scale(" + scale + ")";
+    return;
+  }
+  const toolbarHeight = withToolbar ? Math.max(64, toolbar.offsetHeight + 26) : 0;
+  const s = Math.min(innerWidth / 840, Math.max(0, innerHeight - toolbarHeight) / (withToolbar ? 1080 : 1350), 1.6);
+  stage.style.transform = `translate(-50%, calc(-50% + ${toolbarHeight / 2}px)) scale(${s})`;
 }
+
 fit(); addEventListener('resize', fit);
 
 /* ------------------------------------------------------------------ math */
@@ -241,8 +477,8 @@ const SLOTS = [{ r: -1.6, x: 0, y: 0 }, { r: 1.5, x: 10, y: 9 }, { r: -.5, x: -7
 
 /* ------------------------------------------------------------------ sheets */
 const sheetLayer = $('#sheets');
-const inkHTML = $('#code').outerHTML;
-function makeSheet(k, c) {
+function makeSheet(k, c, ink = cardCode) {
+  const inkHTML = ink.outerHTML;
   const el = document.createElement('div');
   el.className = 'sheet';
   el.innerHTML =
@@ -320,7 +556,10 @@ function renderClip(t, events) {
 const btn = $('#copy');
 const bInner = btn.querySelector('.inner'), bOk = btn.querySelector('.okfill'), bHov = btn.querySelector('.hov');
 const bIdle = btn.querySelector('.idle'), bDone = btn.querySelector('.done'), bCheck = btn.querySelector('.check');
+const copyLabel = bIdle.querySelector('span');
 const cardCode = $('#code');
+const codeLineHeight = parseFloat(getComputedStyle(cardCode).lineHeight);
+const visibleCodeLines = Math.ceil($('#codebody').clientHeight / codeLineHeight) + 1;
 function renderButton(t, clicks, hover) {
   let ok = 0, press = 0, pop = 1, dim = 0;
   for (const c of clicks) {
@@ -456,23 +695,470 @@ muteBtn.addEventListener('click', () => {
 });
 
 /* ------------------------------------------------------------------ clipboard */
-function writeClipboard(text) {
-  const fallback = () => {
-    const ta = document.createElement('textarea');
-    ta.value = text; ta.setAttribute('readonly', ''); ta.style.cssText = 'position:fixed;opacity:0;left:-9999px';
-    document.body.appendChild(ta); ta.select();
-    try { document.execCommand('copy'); } catch (e) {}
-    ta.remove(); btn.focus({ preventScroll: true });
-  };
-  if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).catch(fallback);
-  else fallback();
+let requestId = 0;
+function requestNative(request) {
+  return new Promise(resolve => {
+    const id = ++requestId;
+    const finish = response => {
+      clearTimeout(timer);
+      nativeHost.removeEventListener('message', receive);
+      resolve(response);
+    };
+    const receive = event => {
+      if (event.data?.id === id) finish(event.data);
+    };
+    const timer = setTimeout(() => finish(null), 5000);
+    nativeHost.addEventListener('message', receive);
+    try { nativeHost.postMessage({ ...request, id }); }
+    catch { finish(null); }
+  });
+}
+
+async function writeClipboard(text) {
+  if (nativeHost) return (await requestNative({ type: 'copy', text }))?.copied === true;
+  if (navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch { /* try the legacy copy path */ }
+  }
+  const ta = document.createElement('textarea');
+  ta.value = text; ta.setAttribute('readonly', ''); ta.style.cssText = 'position:fixed;opacity:0;left:-9999px';
+  document.body.appendChild(ta);
+  try {
+    ta.select();
+    return document.execCommand('copy');
+  } catch {
+    return false;
+  } finally {
+    ta.remove();
+    btn.focus({ preventScroll: true });
+  }
 }
 
 /* ------------------------------------------------------------------ live (interactive) mode */
 const now = () => performance.now() / 1000;
 const clicks = [], sheets = [], clipEvents = [];
-let seq = 0, busyUntil = 0, running = false;
+let seq = 0, busyUntil = 0, running = false, copying = false;
 const live = $('#live');
+const cardTitle = $('#card-title');
+const cardInput = $('#card-input');
+let text = CODE;
+let codeLines = CODE.split('\n');
+let highlightedLines, selectedLanguage = 'auto', resolvedLanguage;
+let renderedText, renderedLanguage, renderedExtension, detectedSample, detectedLanguage;
+const strings = {
+  en: {
+    edit: 'Edit text', hint: 'The preview shows up to 8 lines. Copy writes the full text.',
+    sample: 'Use sample', cancel: 'Cancel', save: 'Apply', language: 'Language',
+    displayLanguage: 'Display language', codeLanguage: 'Code language', automatic: 'Automatic',
+    codeLanguageHint: 'Automatic detects the language from the code first. A known extension in the card title sets the final language. You can also choose a language manually.',
+    systemLanguage: 'System language',
+    widget: 'Desktop widget', widgetHint: 'Keep a small editor above other windows so you can type and copy right away.',
+    normalWindow: 'Normal window', widgetError: 'Could not switch window mode. Try again.',
+    widgetTransparency: 'Background transparency', widgetExit: 'Quit',
+    advanced: 'Advanced', direct: 'Edit on the card', done: 'Done',
+    directHint: 'Type directly on the card. Turn this off to use the Edit text and Apply steps again.',
+    browser: 'Open in browser',
+    browserHint: 'Open Copy Clip in your browser. To move text between windows, copy it and press Ctrl+V in an editor.',
+    browserError: 'Could not open the browser. Open ui/index.html from the extracted folder.',
+    copy: 'Copy', copied: 'Copied', copiedStatus: 'Copied to clipboard',
+    failure: 'Could not copy. Try again, or use Ctrl+C in the editor.',
+    browserFailure: 'Could not copy. Select the code and press Ctrl+C.',
+    empty: 'Enter text to copy, then try again.',
+    invalid: 'This text contains a null character. Remove it and try again.',
+    mute: 'Mute sound', unmute: 'Unmute sound', plain: 'Plain text', cardTitle: 'Card title'
+  },
+  ko: {
+    edit: '텍스트 편집', hint: '미리보기는 최대 8줄입니다. 복사하면 전체 텍스트가 클립보드에 들어갑니다.',
+    sample: '예제 사용', cancel: '취소', save: '적용', language: '언어',
+    displayLanguage: '앱 표시 언어', codeLanguage: '코드 언어', automatic: '자동 감지',
+    codeLanguageHint: '자동 감지는 코드 내용에서 언어 후보를 찾습니다. 카드 제목에 알려진 확장자가 있으면 그 언어로 적용합니다. 언어를 직접 선택할 수도 있습니다.',
+    systemLanguage: '시스템 언어',
+    widget: '데스크톱 위젯', widgetHint: '작은 편집 창을 다른 창 위에 띄워 바로 입력하고 복사할 수 있습니다.',
+    normalWindow: '일반 창', widgetError: '창 모드를 바꾸지 못했습니다. 다시 시도하세요.',
+    widgetTransparency: '배경 투명도', widgetExit: '종료',
+    advanced: '고급', direct: '카드에서 바로 편집', done: '완료',
+    directHint: '카드에서 바로 입력할 수 있습니다. 끄면 다시 텍스트 편집 창에서 적용을 눌러야 바뀝니다.',
+    browser: '브라우저에서 열기',
+    browserHint: 'Copy Clip을 브라우저에서 엽니다. 창 사이에서 텍스트를 옮기려면 복사한 뒤 편집 칸에서 Ctrl+V를 누르세요.',
+    browserError: '브라우저를 열지 못했습니다. 압축을 푼 폴더에서 ui/index.html을 여세요.',
+    copy: '복사', copied: '복사됨', copiedStatus: '클립보드에 복사했습니다.',
+    failure: '복사하지 못했습니다. 다시 시도하거나 편집 창에서 Ctrl+C를 누르세요.',
+    browserFailure: '복사하지 못했습니다. 코드를 선택하고 Ctrl+C를 누르세요.',
+    empty: '복사할 텍스트를 입력한 뒤 다시 시도하세요.',
+    invalid: '널 문자가 포함되어 있습니다. 해당 문자를 지우고 다시 시도하세요.',
+    mute: '소리 끄기', unmute: '소리 켜기', plain: '일반 텍스트', cardTitle: '카드 제목'
+  },
+  ...Object.fromEntries(Object.entries(window.copyClipLocales ?? {}).map(([id, locale]) => [id, locale.messages]))
+};
+let words = strings.en;
+const displayNames = {
+  en: 'English', ko: '한국어',
+  ...Object.fromEntries(Object.entries(window.copyClipLocales ?? {}).map(([id, locale]) => [id, locale.name]))
+};
+
+function matchDisplayLanguage(tag) {
+  try {
+    const locale = new Intl.Locale(tag).maximize();
+    if (locale.language === 'zh') return locale.script === 'Hant' ? 'zh-Hant' : 'zh-Hans';
+    if (locale.language === 'pt') return 'pt-BR';
+    return locale.language;
+  } catch {
+    return 'en';
+  }
+}
+
+function splitHighlightedLines(markup) {
+  // Highlight.js escapes the input and may open a token across several lines.
+  // Keep its classes but rebuild the visible rows with text nodes.
+  const template = document.createElement('template');
+  template.innerHTML = markup;
+  const lines = [[]];
+  function collect(node, style) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      const parts = node.textContent.split('\n');
+      for (let i = 0; i < parts.length; i++) {
+        if (i > 0) lines.push([]);
+        if (parts[i]) lines[lines.length - 1].push({ value: parts[i], style });
+      }
+      return;
+    }
+    const classes = node.classList ? [...node.classList].filter(name => name.startsWith('hljs-')) : [];
+    const nextStyle = [style, ...classes].filter(Boolean).join(' ');
+    for (const child of node.childNodes) collect(child, nextStyle);
+  }
+  collect(template.content, '');
+  return lines;
+}
+
+function appendTokens(row, tokens, limit = Infinity) {
+  let remaining = limit;
+  for (const { value, style } of tokens) {
+    if (remaining === 0) break;
+    const part = value.slice(0, remaining);
+    remaining -= part.length;
+    if (!style) {
+      row.append(part);
+      continue;
+    }
+    const span = document.createElement('span');
+    span.className = style;
+    span.textContent = part;
+    row.append(span);
+  }
+}
+
+function detectCodeLanguage(sample) {
+  // A short Python function can tie with CSS in Highlight.js's relevance score.
+  if (/^[ \t]*(?:async[ \t]+)?def[ \t]+[A-Za-z_]\w*[ \t]*\([^)\n]*\)[ \t]*(?:->[^:\n]+)?[ \t]*:/m.test(sample)) {
+    return 'python';
+  }
+  const detected = highlighter.highlightAuto(sample, autoLanguages);
+  return detected.relevance >= 3 ? detected.language : null;
+}
+
+function updateHighlighting() {
+  const automatic = selectedLanguage === 'auto';
+  const extension = /\.([a-z0-9+]+)$/i.exec(cardTitle.textContent)?.[1].toLowerCase();
+  const extensionLanguage = automatic ? extensionLanguages.get(extension) : undefined;
+  if (text === renderedText && selectedLanguage === renderedLanguage && extensionLanguage === renderedExtension) return;
+  renderedText = text;
+  renderedLanguage = selectedLanguage;
+  renderedExtension = extensionLanguage;
+  codeLines = text.split('\n');
+  highlightedLines = null;
+  resolvedLanguage = null;
+
+  const canHighlight = highlighter && text.length <= HIGHLIGHT_LIMIT && text.trim().length > 0;
+  let contentLanguage = text === CODE ? 'javascript' : null;
+  if (automatic && canHighlight && text !== CODE) {
+    const sample = text.slice(0, 4000);
+    if (sample !== detectedSample) {
+      detectedSample = sample;
+      detectedLanguage = null;
+      try {
+        detectedLanguage = detectCodeLanguage(sample);
+      } catch {
+        // A known filename extension can still provide the language.
+      }
+    }
+    contentLanguage = detectedLanguage;
+  }
+  const language = automatic ? extensionLanguage ?? contentLanguage : selectedLanguage;
+  if (!language || language === 'plain') return;
+  const useSampleMarkup = text === CODE && language === 'javascript';
+  if (!highlighter && !useSampleMarkup) return;
+  resolvedLanguage = language;
+  if (useSampleMarkup || !canHighlight || language === 'plaintext') return;
+  try {
+    const result = highlighter.highlight(text, { language, ignoreIllegals: true });
+    highlightedLines = splitHighlightedLines(result.value);
+  } catch {
+    // Plain text remains editable even if a grammar cannot process the input.
+  }
+}
+
+function textError(value) {
+  return value.includes('\0') ? 'invalid' : null;
+}
+
+function drawCode(target, start, count, limit) {
+  const rows = codeLines.slice(start, start + count).map((value, index) => {
+    const row = document.createElement('span');
+    row.className = 'code-line';
+    const number = document.createElement('span');
+    number.className = 'ln';
+    number.setAttribute('aria-hidden', 'true');
+    const lineNumber = start + index;
+    number.textContent = lineNumber + 1;
+    if (text === CODE && resolvedLanguage === 'javascript' && HL[lineNumber] != null) row.innerHTML = HL[lineNumber];
+    else if (highlightedLines?.[lineNumber]) appendTokens(row, highlightedLines[lineNumber], limit);
+    else row.textContent = value.slice(0, limit);
+    row.prepend(number);
+    return row;
+  });
+  target.replaceChildren(...rows);
+}
+
+function drawCard() {
+  if (cardInput.hidden) {
+    cardCode.style.transform = '';
+    drawCode(cardCode, 0, 8, 160);
+    return;
+  }
+
+  const first = Math.floor(cardInput.scrollTop / codeLineHeight);
+  const top = first * codeLineHeight - cardInput.scrollTop;
+  cardCode.style.transform = 'translate(' + -cardInput.scrollLeft + 'px,' + top + 'px)';
+  drawCode(cardCode, first, visibleCodeLines);
+}
+
+function updatePreview() {
+  updateHighlighting();
+  const badge = $('.lang');
+  badge.hidden = !resolvedLanguage;
+  if (resolvedLanguage === 'plaintext') badge.textContent = words.plain;
+  else if (resolvedLanguage) badge.textContent = resolvedLanguage === 'javascript' ? 'JS' : codeLanguageName(resolvedLanguage);
+  drawCard();
+}
+
+if (withToolbar) {
+  const editor = $('#editor'), input = $('#input'), language = $('#language');
+  const titleInput = $('#card-title-input');
+  const settings = $('#settings'), directEdit = $('#direct-edit');
+  const editorError = $('#editor-error');
+  function showEditorError(key) {
+    editorError.hidden = !key;
+    editorError.textContent = key ? words[key] : '';
+  }
+  const defaultTitle = cardTitle.textContent;
+  titleInput.value = defaultTitle;
+  cardTitle.hidden = true;
+  titleInput.hidden = false;
+  titleInput.addEventListener('blur', () => {
+    const value = titleInput.value.trim() || defaultTitle;
+    titleInput.value = value;
+    if (value === cardTitle.textContent) return;
+    cardTitle.textContent = value;
+    updatePreview();
+  });
+  titleInput.addEventListener('keydown', event => {
+    if (event.isComposing || (event.key !== 'Enter' && event.key !== 'Escape')) return;
+    event.preventDefault();
+    if (event.key === 'Escape') titleInput.value = cardTitle.textContent;
+    titleInput.blur();
+  });
+  const languages = $('#languages'), codeLanguage = $('#code-language'), languageMenu = $('#language-menu');
+  const systemLocale = matchDisplayLanguage(nativeHost ? window.copyClipSystemLanguage : navigator.language);
+  for (const [id, name] of Object.entries(displayNames)) {
+    if (id === 'en' || id === 'ko') continue;
+    const option = new Option(name, id);
+    option.lang = id;
+    language.add(option);
+  }
+  function setLanguage(value) {
+    const preference = Object.prototype.hasOwnProperty.call(strings, value) ? value : 'system';
+    const requested = preference === 'system' ? systemLocale : preference;
+    const locale = Object.prototype.hasOwnProperty.call(strings, requested) ? requested : 'en';
+    words = strings[locale];
+    document.documentElement.lang = locale;
+    language.value = preference;
+    $('#language-current').textContent = displayNames[locale];
+    languageMenu.setAttribute('aria-label', words.language + ' · ' + displayNames[locale]);
+    for (const [id, key] of Object.entries({
+      edit: 'edit', 'editor-title': 'edit', 'editor-hint': 'hint',
+      sample: 'sample', cancel: 'cancel', save: 'save',
+      advanced: 'advanced', 'settings-title': 'advanced', 'direct-label': 'direct',
+      'direct-hint': 'directHint', 'browser-hint': 'browserHint', 'open-browser': 'browser',
+      'close-settings': 'done', 'languages-title': 'language', 'display-language-label': 'displayLanguage',
+      'code-language-label': 'codeLanguage', 'code-language-hint': 'codeLanguageHint',
+      'close-languages': 'done', 'code-auto': 'automatic', 'code-plain': 'plain',
+      'system-language': 'systemLanguage', 'open-widget': 'widget', 'widget-hint': 'widgetHint',
+      'widget-restore': 'normalWindow', 'widget-transparency-label': 'widgetTransparency', 'widget-exit': 'widgetExit'
+    })) $(`#${id}`).textContent = words[key];
+    cardInput.setAttribute('aria-label', words.direct);
+    titleInput.setAttribute('aria-label', words.cardTitle);
+    bIdle.querySelector('span').textContent = words.copy;
+    bDone.querySelector('span').textContent = words.copied;
+    btn.setAttribute('aria-label', words.copy);
+    muteBtn.setAttribute('aria-label', Audio.muted ? words.unmute : words.mute);
+    updatePreview();
+    fit();
+  }
+
+  try { setLanguage(localStorage.getItem('copyclip.language')); }
+  catch { setLanguage('system'); }
+  language.addEventListener('change', () => {
+    setLanguage(language.value);
+    try { localStorage.setItem('copyclip.language', language.value); } catch {}
+  });
+  const availableLanguages = (highlighter?.listLanguages() ?? []).filter(id => id !== 'plaintext');
+  availableLanguages.sort((a, b) => codeLanguageName(a).localeCompare(codeLanguageName(b)));
+  for (const id of availableLanguages) {
+    codeLanguage.add(new Option(codeLanguageName(id), id));
+  }
+  languageMenu.addEventListener('click', () => languages.showModal());
+  $('#close-languages').addEventListener('click', () => languages.close());
+  languages.addEventListener('close', () => {
+    if (directEdit.checked) cardInput.focus();
+  });
+  codeLanguage.addEventListener('change', () => {
+    selectedLanguage = codeLanguage.value;
+    updatePreview();
+  });
+  $('#edit').addEventListener('click', () => {
+    input.value = text;
+    showEditorError(null);
+    editor.showModal();
+  });
+  input.addEventListener('input', () => showEditorError(null));
+  $('#sample').addEventListener('click', () => {
+    input.value = CODE;
+    showEditorError(null);
+    input.focus();
+  });
+  $('#cancel').addEventListener('click', () => editor.close());
+  $('#save').addEventListener('click', () => {
+    const error = textError(input.value);
+    if (error) {
+      showEditorError(error);
+      input.focus();
+      return;
+    }
+    text = input.value;
+    if (directEdit.checked) cardInput.value = text;
+    updatePreview();
+    editor.close();
+  });
+  $('#advanced').addEventListener('click', () => {
+    settings.showModal();
+  });
+  $('#close-settings').addEventListener('click', () => settings.close());
+  settings.addEventListener('close', () => {
+    if (directEdit.checked) cardInput.focus();
+  });
+  function applyEditingMode() {
+    const editable = widgetMode || directEdit.checked;
+    if (editable && cardInput.hidden) cardInput.value = text;
+    cardInput.hidden = !editable;
+    cardCode.setAttribute('aria-hidden', String(editable));
+    drawCard();
+  }
+  directEdit.addEventListener('change', applyEditingMode);
+  cardInput.addEventListener('scroll', drawCard);
+  cardInput.addEventListener('input', () => {
+    text = cardInput.value;
+    updatePreview();
+  });
+  if (nativeHost) {
+    const widgetButton = $('#open-widget'), widgetStatus = $('#widget-status');
+    const widgetMenu = $('#widget-menu'), widgetRestore = $('#widget-restore');
+    $('#advanced').addEventListener('click', () => { widgetStatus.hidden = true; });
+    $('#widget-setting').hidden = false;
+    const transparency = $('#widget-transparency');
+    const transparencyValue = $('#widget-transparency-value');
+    const transparencyKey = 'copyclip.widgetTransparency';
+    function updateTransparency() {
+      transparencyValue.value = transparency.value + '%';
+      document.documentElement.style.setProperty('--widget-background-opacity', 1 - transparency.valueAsNumber / 100);
+    }
+    try { transparency.value = localStorage.getItem(transparencyKey) ?? transparency.defaultValue; } catch {}
+    updateTransparency();
+    transparency.addEventListener('input', updateTransparency);
+    transparency.addEventListener('change', () => {
+      try { localStorage.setItem(transparencyKey, transparency.value); } catch {}
+    });
+    function applyWidgetMode(enabled) {
+      widgetMode = enabled;
+      document.documentElement.classList.toggle('widget', enabled);
+      applyEditingMode();
+      fit();
+      if (enabled) {
+        settings.close();
+        cardInput.focus();
+      } else if (directEdit.checked) {
+        cardInput.focus();
+      } else {
+        $('#advanced').focus();
+      }
+    }
+    async function switchWidget(enabled) {
+      widgetButton.disabled = widgetRestore.disabled = true;
+      const result = await requestNative({ type: 'widget', enabled });
+      widgetButton.disabled = widgetRestore.disabled = false;
+      if (result?.widget === enabled) {
+        if (widgetMenu.matches(':popover-open')) widgetMenu.hidePopover();
+        applyWidgetMode(enabled);
+      } else if (settings.open) {
+        widgetStatus.textContent = words.widgetError;
+        widgetStatus.hidden = false;
+      } else {
+        live.textContent = words.widgetError;
+      }
+    }
+    widgetButton.addEventListener('click', () => switchWidget(true));
+    widgetRestore.addEventListener('click', () => switchWidget(false));
+    $('#widget-exit').addEventListener('click', () => requestNative({ type: 'quit-widget' }));
+    function moveWidget(event) {
+      if (!widgetMode || event.button !== 0 || event.target.closest('button,input') ||
+          widgetMenu.matches(':popover-open')) return;
+      titleInput.blur();
+      event.preventDefault();
+      requestNative({ type: 'move-widget' });
+    }
+    for (const grip of document.querySelectorAll('[data-widget-drag]')) {
+      grip.addEventListener('pointerdown', moveWidget);
+    }
+    document.addEventListener('contextmenu', event => {
+      if (!widgetMode || (event.shiftKey && event.button === 2)) return;
+      event.preventDefault();
+      if (!widgetMenu.matches(':popover-open')) widgetMenu.showPopover();
+      const { offsetWidth, offsetHeight } = widgetMenu;
+      widgetMenu.style.left = clamp(event.clientX, 0, Math.max(0, innerWidth - offsetWidth - 4)) + 'px';
+      widgetMenu.style.top = clamp(event.clientY, 0, Math.max(0, innerHeight - offsetHeight - 4)) + 'px';
+      widgetRestore.focus();
+    });
+    const browserButton = $('#open-browser'), browserStatus = $('#browser-status');
+    $('#browser-setting').hidden = false;
+    browserButton.addEventListener('click', async () => {
+      browserButton.disabled = true;
+      browserStatus.hidden = true;
+      const result = await requestNative({ type: 'open-browser' });
+      browserButton.disabled = false;
+      if (result?.opened === true) {
+        settings.close();
+      } else {
+        browserStatus.textContent = words.browserError;
+        browserStatus.hidden = false;
+      }
+    });
+    $('#advanced').addEventListener('click', () => { browserStatus.hidden = true; });
+  }
+  toolbar.hidden = false;
+  updatePreview();
+  fit();
+}
 
 function render(t, opts) {
   for (const s of opts.sheets) renderSheet(s, t);
@@ -492,15 +1178,42 @@ function frame() {
 }
 function kick(until) { busyUntil = Math.max(busyUntil, until); if (!running) { running = true; requestAnimationFrame(frame); } }
 
-function onCopy() {
-  writeClipboard(CODE);
-  live.textContent = ''; live.textContent = 'Copied to clipboard';
+async function onCopy() {
+  if (copying) return;
+  copying = true;
+  btn.setAttribute('aria-disabled', 'true');
+  copyLabel.textContent = words.copy;
+  live.textContent = '';
+  let error = text ? textError(text) : 'empty';
+  let ink;
+  try {
+    if (!error) {
+      if (withToolbar) {
+        ink = document.createElement('pre');
+        ink.className = 'code';
+        drawCode(ink, 0, 8, 160);
+      }
+      const pending = writeClipboard(text);
+      if (!reduced) Audio.ensure();
+      if (!(await pending)) error = nativeHost ? 'failure' : 'browserFailure';
+    }
+  } finally {
+    copying = false;
+    btn.removeAttribute('aria-disabled');
+  }
+  if (error) {
+    clicks.length = 0;
+    renderButton(now(), clicks);
+    copyLabel.textContent = words.browserFailure === strings.en.browserFailure ? 'Copy failed' : words.copy;
+    live.textContent = words[error];
+    return;
+  }
+  live.textContent = words.copiedStatus;
   const c = now();
   clicks.push(c);
   if (reduced) { kick(c + T.okOut[1] + .1); return; }
-  Audio.ensure();
   const k = seq++;
-  const s = makeSheet(k, c);
+  const s = makeSheet(k, c, ink);
   sheets.push(s);
   clipEvents.push({ o: c + T.clipOpen, c: c + T.clipClose });
   const sfx = copySfx(c, k + 1);
