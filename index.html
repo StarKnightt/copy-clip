@@ -320,6 +320,7 @@ function renderClip(t, events) {
 const btn = $('#copy');
 const bInner = btn.querySelector('.inner'), bOk = btn.querySelector('.okfill'), bHov = btn.querySelector('.hov');
 const bIdle = btn.querySelector('.idle'), bDone = btn.querySelector('.done'), bCheck = btn.querySelector('.check');
+const copyLabel = bIdle.querySelector('span');
 const cardCode = $('#code');
 function renderButton(t, clicks, hover) {
   let ok = 0, press = 0, pop = 1, dim = 0;
@@ -456,22 +457,31 @@ muteBtn.addEventListener('click', () => {
 });
 
 /* ------------------------------------------------------------------ clipboard */
-function writeClipboard(text) {
-  const fallback = () => {
-    const ta = document.createElement('textarea');
-    ta.value = text; ta.setAttribute('readonly', ''); ta.style.cssText = 'position:fixed;opacity:0;left:-9999px';
-    document.body.appendChild(ta); ta.select();
-    try { document.execCommand('copy'); } catch (e) {}
-    ta.remove(); btn.focus({ preventScroll: true });
-  };
-  if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).catch(fallback);
-  else fallback();
+async function writeClipboard(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch { /* try the legacy copy path */ }
+  }
+  const ta = document.createElement('textarea');
+  ta.value = text; ta.setAttribute('readonly', ''); ta.style.cssText = 'position:fixed;opacity:0;left:-9999px';
+  document.body.appendChild(ta);
+  try {
+    ta.select();
+    return document.execCommand('copy');
+  } catch {
+    return false;
+  } finally {
+    ta.remove();
+    btn.focus({ preventScroll: true });
+  }
 }
 
 /* ------------------------------------------------------------------ live (interactive) mode */
 const now = () => performance.now() / 1000;
 const clicks = [], sheets = [], clipEvents = [];
-let seq = 0, busyUntil = 0, running = false;
+let seq = 0, busyUntil = 0, running = false, copying = false;
 const live = $('#live');
 
 function render(t, opts) {
@@ -492,13 +502,32 @@ function frame() {
 }
 function kick(until) { busyUntil = Math.max(busyUntil, until); if (!running) { running = true; requestAnimationFrame(frame); } }
 
-function onCopy() {
-  writeClipboard(CODE);
-  live.textContent = ''; live.textContent = 'Copied to clipboard';
+async function onCopy() {
+  if (copying) return;
+  copying = true;
+  btn.setAttribute('aria-disabled', 'true');
+  copyLabel.textContent = 'Copy';
+  live.textContent = '';
+  let copied;
+  try {
+    const pending = writeClipboard(CODE);
+    if (!reduced) Audio.ensure();
+    copied = await pending;
+  } finally {
+    copying = false;
+    btn.removeAttribute('aria-disabled');
+  }
+  if (!copied) {
+    clicks.length = 0;
+    renderButton(now(), clicks);
+    copyLabel.textContent = 'Copy failed';
+    live.textContent = 'Could not copy to clipboard. Try again.';
+    return;
+  }
+  live.textContent = 'Copied to clipboard';
   const c = now();
   clicks.push(c);
   if (reduced) { kick(c + T.okOut[1] + .1); return; }
-  Audio.ensure();
   const k = seq++;
   const s = makeSheet(k, c);
   sheets.push(s);
