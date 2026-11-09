@@ -42,6 +42,8 @@ Then open `http://localhost:3000`. Any static server works.
 
 Open [the local editor](http://localhost:3000/?editor=1) after serving the page, or append `?editor=1` to the page URL. Use **Edit text** to update the snippet, or **Advanced → Edit on the card** to type directly. Click the card title to rename it. The preview shows up to eight lines and **Copy** sends the full text.
 
+In editor mode, **Language** lets you change the display language and syntax highlighting. Automatic mode uses a recognized title extension to resolve the language, with the code as a fallback. Keep `locales.js` and the `vendor` folder alongside the HTML for all options. The vendored Highlight.js 11.12.0 bundle is [BSD 3-Clause](vendor/highlight-LICENSE.txt).
+
 ## Usage
 
 The component fills its own page and scales to fit, so the easiest way to drop it in is an iframe:

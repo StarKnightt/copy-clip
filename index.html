@@ -48,6 +48,20 @@ pre.code .ln{display:inline-block;width:28px;text-align:right;margin-right:26px;
 pre.code .k{color:var(--kw)} pre.code .f{color:var(--fn)} pre.code .n{color:var(--num)}
 pre.code .c{color:var(--com);font-style:italic}
 
+pre.code :where(span[class^="hljs-"]){color:var(--fn)}
+pre.code :is(.k,.hljs-keyword,.hljs-selector-tag,.hljs-operator){color:var(--kw)}
+pre.code :is(.f,.hljs-title,.hljs-built_in,.hljs-type,.hljs-tag){color:var(--fn)}
+pre.code :is(.n,.hljs-number,.hljs-literal){color:var(--num)}
+pre.code :is(.c,.hljs-comment,.hljs-quote){color:var(--com);font-style:italic}
+pre.code :is(.hljs-string,.hljs-regexp,.hljs-symbol,.hljs-addition){color:#785329}
+pre.code :is(.hljs-attr,.hljs-attribute,.hljs-variable,.hljs-name,.hljs-meta,
+  .hljs-selector-class,.hljs-selector-id,.hljs-property){color:#4E5480}
+pre.code .hljs-deletion{color:#923C37}
+
+.language-field{display:block;margin:0 0 14px;font-weight:600}
+.language-field select{display:block;width:100%;margin-top:6px;font-weight:400}
+.language-field select{font:inherit;padding:8px}
+
 /* ---------- copy button ---------- */
 .copy{position:relative;width:156px;height:54px;border:0;padding:0;border-radius:15px;background:none;
   cursor:pointer;font:600 20px/1 'Bricolage Grotesque',sans-serif;color:#F7F5F0;-webkit-tap-highlight-color:transparent}
@@ -223,8 +237,31 @@ html.demo .cursor{display:block}
 
 <div class="toolbar" id="toolbar" hidden>
   <button id="edit" type="button">Edit text</button>
+  <button id="language-menu" type="button" aria-haspopup="dialog">
+    <span id="language-current">English</span> <span aria-hidden="true">▾</span>
+  </button>
   <button id="advanced" type="button" aria-haspopup="dialog">Advanced</button>
 </div>
+<dialog id="languages" aria-labelledby="languages-title">
+  <h2 id="languages-title">Language</h2>
+  <label class="language-field">
+    <span id="display-language-label">Display language</span>
+    <select id="language">
+      <option id="system-language" value="system">System language</option>
+      <option value="en" lang="en">English</option>
+      <option value="ko" lang="ko">한국어</option>
+    </select>
+  </label>
+  <label class="language-field">
+    <span id="code-language-label">Code language</span>
+    <select id="code-language" aria-describedby="code-language-hint">
+      <option id="code-auto" value="auto">Automatic</option>
+      <option id="code-plain" value="plain">Plain text</option>
+    </select>
+  </label>
+  <p id="code-language-hint">Automatic detects the language from the code first. A known extension in the card title sets the final language. You can also choose a language manually.</p>
+  <div class="editor-actions"><button id="close-languages" type="button">Done</button></div>
+</dialog>
 <dialog id="editor" aria-labelledby="editor-title" aria-describedby="editor-hint">
   <h2 id="editor-title">Edit text</h2>
   <p id="editor-hint">The preview shows the first 8 lines. Copy writes the full text.</p>
@@ -256,7 +293,7 @@ html.demo .cursor{display:block}
 <div class="sr" id="live" aria-live="polite"></div>
 
 <script>
-(() => {
+(async () => {
 'use strict';
 const $ = s => document.querySelector(s);
 
@@ -287,7 +324,59 @@ const toolbar = $('#toolbar');
 const withToolbar = !DEMO && window.self === window.top &&
   new URLSearchParams(location.search).get('editor') === '1' &&
   typeof $('#editor').showModal === 'function';
-if (withToolbar) document.documentElement.classList.add('with-toolbar');
+if (withToolbar) {
+  document.documentElement.classList.add('with-toolbar');
+  function loadScript(source) {
+    return new Promise(resolve => {
+      const script = document.createElement('script');
+      script.src = source;
+      script.onload = script.onerror = resolve;
+      document.head.append(script);
+    });
+  }
+  await Promise.all([loadScript('locales.js'), loadScript('vendor/highlight.min.js')]);
+}
+const highlighter = withToolbar ? window.hljs : null;
+const HIGHLIGHT_LIMIT = 100_000;
+const extensionLanguages = new Map(Object.entries({
+  bash: 'sh bash zsh',
+  c: 'c',
+  cpp: 'h cc cpp cxx c++ hh hpp hxx',
+  csharp: 'cs',
+  css: 'css',
+  dart: 'dart',
+  diff: 'diff patch',
+  go: 'go',
+  ini: 'ini toml',
+  java: 'java',
+  javascript: 'js cjs mjs jsx',
+  json: 'json jsonc',
+  kotlin: 'kt kts',
+  lua: 'lua',
+  makefile: 'mk',
+  markdown: 'md markdown',
+  objectivec: 'mm',
+  perl: 'pl pm',
+  php: 'php',
+  plaintext: 'txt text',
+  powershell: 'ps1 psm1 psd1',
+  python: 'py pyw pyi',
+  r: 'r',
+  ruby: 'rb',
+  rust: 'rs',
+  scala: 'scala sc',
+  scss: 'scss',
+  sql: 'sql',
+  swift: 'swift',
+  typescript: 'ts cts mts tsx',
+  xml: 'html htm xhtml xml svg',
+  yaml: 'yaml yml'
+}).flatMap(([language, extensions]) => extensions.split(' ').map(extension => [extension, language])));
+const autoLanguages = [
+  'bash', 'cpp', 'csharp', 'css', 'go', 'java', 'javascript', 'json', 'php',
+  'python', 'ruby', 'rust', 'sql', 'typescript', 'xml', 'yaml'
+];
+const codeLanguageName = id => highlighter?.getLanguage(id)?.name ?? id;
 const RECORD = !!window.__RECORD__;          // set by the recorder: virtual clock, no rAF
 if (DEMO) document.documentElement.classList.add('demo');
 const rmq = matchMedia('(prefers-reduced-motion: reduce)');
@@ -584,12 +673,159 @@ const cardTitle = $('#card-title');
 const cardInput = $('#card-input');
 let text = CODE;
 let codeLines = CODE.split('\n');
-let words = {
-  empty: 'Enter text to copy, then try again.',
-  invalid: 'This text contains a null character. Remove it and try again.',
-  browserFailure: 'Could not copy to clipboard. Try again.',
-  copiedStatus: 'Copied to clipboard', copy: 'Copy', direct: 'Edit text on the card', cardTitle: 'Card title'
+let highlightedLines, selectedLanguage = 'auto', resolvedLanguage;
+let renderedText, renderedLanguage, renderedExtension, detectedSample, detectedLanguage;
+const strings = {
+  en: {
+    edit: 'Edit text', hint: 'The preview shows up to 8 lines. Copy writes the full text.',
+    sample: 'Use sample', cancel: 'Cancel', save: 'Apply', language: 'Language',
+    displayLanguage: 'Display language', codeLanguage: 'Code language', automatic: 'Automatic',
+    codeLanguageHint: 'Automatic detects the language from the code first. A known extension in the card title sets the final language. You can also choose a language manually.',
+    systemLanguage: 'System language',
+    widget: 'Desktop widget', widgetHint: 'Keep a small editor above other windows so you can type and copy right away.',
+    normalWindow: 'Normal window', widgetError: 'Could not switch window mode. Try again.',
+    widgetTransparency: 'Background transparency', widgetExit: 'Quit',
+    advanced: 'Advanced', direct: 'Edit on the card', done: 'Done',
+    directHint: 'Type directly on the card. Turn this off to use the Edit text and Apply steps again.',
+    browser: 'Open in browser',
+    browserHint: 'Open Copy Clip in your browser. To move text between windows, copy it and press Ctrl+V in an editor.',
+    browserError: 'Could not open the browser. Open ui/index.html from the extracted folder.',
+    copy: 'Copy', copied: 'Copied', copiedStatus: 'Copied to clipboard',
+    failure: 'Could not copy. Try again, or use Ctrl+C in the editor.',
+    browserFailure: 'Could not copy. Select the code and press Ctrl+C.',
+    empty: 'Enter text to copy, then try again.',
+    invalid: 'This text contains a null character. Remove it and try again.',
+    mute: 'Mute sound', unmute: 'Unmute sound', plain: 'Plain text', cardTitle: 'Card title'
+  },
+  ko: {
+    edit: '텍스트 편집', hint: '미리보기는 최대 8줄입니다. 복사하면 전체 텍스트가 클립보드에 들어갑니다.',
+    sample: '예제 사용', cancel: '취소', save: '적용', language: '언어',
+    displayLanguage: '앱 표시 언어', codeLanguage: '코드 언어', automatic: '자동 감지',
+    codeLanguageHint: '자동 감지는 코드 내용에서 언어 후보를 찾습니다. 카드 제목에 알려진 확장자가 있으면 그 언어로 적용합니다. 언어를 직접 선택할 수도 있습니다.',
+    systemLanguage: '시스템 언어',
+    widget: '데스크톱 위젯', widgetHint: '작은 편집 창을 다른 창 위에 띄워 바로 입력하고 복사할 수 있습니다.',
+    normalWindow: '일반 창', widgetError: '창 모드를 바꾸지 못했습니다. 다시 시도하세요.',
+    widgetTransparency: '배경 투명도', widgetExit: '종료',
+    advanced: '고급', direct: '카드에서 바로 편집', done: '완료',
+    directHint: '카드에서 바로 입력할 수 있습니다. 끄면 다시 텍스트 편집 창에서 적용을 눌러야 바뀝니다.',
+    browser: '브라우저에서 열기',
+    browserHint: 'Copy Clip을 브라우저에서 엽니다. 창 사이에서 텍스트를 옮기려면 복사한 뒤 편집 칸에서 Ctrl+V를 누르세요.',
+    browserError: '브라우저를 열지 못했습니다. 압축을 푼 폴더에서 ui/index.html을 여세요.',
+    copy: '복사', copied: '복사됨', copiedStatus: '클립보드에 복사했습니다.',
+    failure: '복사하지 못했습니다. 다시 시도하거나 편집 창에서 Ctrl+C를 누르세요.',
+    browserFailure: '복사하지 못했습니다. 코드를 선택하고 Ctrl+C를 누르세요.',
+    empty: '복사할 텍스트를 입력한 뒤 다시 시도하세요.',
+    invalid: '널 문자가 포함되어 있습니다. 해당 문자를 지우고 다시 시도하세요.',
+    mute: '소리 끄기', unmute: '소리 켜기', plain: '일반 텍스트', cardTitle: '카드 제목'
+  },
+  ...Object.fromEntries(Object.entries(window.copyClipLocales ?? {}).map(([id, locale]) => [id, locale.messages]))
 };
+let words = strings.en;
+const displayNames = {
+  en: 'English', ko: '한국어',
+  ...Object.fromEntries(Object.entries(window.copyClipLocales ?? {}).map(([id, locale]) => [id, locale.name]))
+};
+
+function matchDisplayLanguage(tag) {
+  try {
+    const locale = new Intl.Locale(tag).maximize();
+    if (locale.language === 'zh') return locale.script === 'Hant' ? 'zh-Hant' : 'zh-Hans';
+    if (locale.language === 'pt') return 'pt-BR';
+    return locale.language;
+  } catch {
+    return 'en';
+  }
+}
+
+function splitHighlightedLines(markup) {
+  // Highlight.js escapes the input and may open a token across several lines.
+  // Keep its classes but rebuild the visible rows with text nodes.
+  const template = document.createElement('template');
+  template.innerHTML = markup;
+  const lines = [[]];
+  function collect(node, style) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      const parts = node.textContent.split('\n');
+      for (let i = 0; i < parts.length; i++) {
+        if (i > 0) lines.push([]);
+        if (parts[i]) lines[lines.length - 1].push({ value: parts[i], style });
+      }
+      return;
+    }
+    const classes = node.classList ? [...node.classList].filter(name => name.startsWith('hljs-')) : [];
+    const nextStyle = [style, ...classes].filter(Boolean).join(' ');
+    for (const child of node.childNodes) collect(child, nextStyle);
+  }
+  collect(template.content, '');
+  return lines;
+}
+
+function appendTokens(row, tokens, limit = Infinity) {
+  let remaining = limit;
+  for (const { value, style } of tokens) {
+    if (remaining === 0) break;
+    const part = value.slice(0, remaining);
+    remaining -= part.length;
+    if (!style) {
+      row.append(part);
+      continue;
+    }
+    const span = document.createElement('span');
+    span.className = style;
+    span.textContent = part;
+    row.append(span);
+  }
+}
+
+function detectCodeLanguage(sample) {
+  // A short Python function can tie with CSS in Highlight.js's relevance score.
+  if (/^[ \t]*(?:async[ \t]+)?def[ \t]+[A-Za-z_]\w*[ \t]*\([^)\n]*\)[ \t]*(?:->[^:\n]+)?[ \t]*:/m.test(sample)) {
+    return 'python';
+  }
+  const detected = highlighter.highlightAuto(sample, autoLanguages);
+  return detected.relevance >= 3 ? detected.language : null;
+}
+
+function updateHighlighting() {
+  const automatic = selectedLanguage === 'auto';
+  const extension = /\.([a-z0-9+]+)$/i.exec(cardTitle.textContent)?.[1].toLowerCase();
+  const extensionLanguage = automatic ? extensionLanguages.get(extension) : undefined;
+  if (text === renderedText && selectedLanguage === renderedLanguage && extensionLanguage === renderedExtension) return;
+  renderedText = text;
+  renderedLanguage = selectedLanguage;
+  renderedExtension = extensionLanguage;
+  codeLines = text.split('\n');
+  highlightedLines = null;
+  resolvedLanguage = null;
+
+  const canHighlight = highlighter && text.length <= HIGHLIGHT_LIMIT && text.trim().length > 0;
+  let contentLanguage = text === CODE ? 'javascript' : null;
+  if (automatic && canHighlight && text !== CODE) {
+    const sample = text.slice(0, 4000);
+    if (sample !== detectedSample) {
+      detectedSample = sample;
+      detectedLanguage = null;
+      try {
+        detectedLanguage = detectCodeLanguage(sample);
+      } catch {
+        // A known filename extension can still provide the language.
+      }
+    }
+    contentLanguage = detectedLanguage;
+  }
+  const language = automatic ? extensionLanguage ?? contentLanguage : selectedLanguage;
+  if (!language || language === 'plain') return;
+  const useSampleMarkup = text === CODE && language === 'javascript';
+  if (!highlighter && !useSampleMarkup) return;
+  resolvedLanguage = language;
+  if (useSampleMarkup || !canHighlight || language === 'plaintext') return;
+  try {
+    const result = highlighter.highlight(text, { language, ignoreIllegals: true });
+    highlightedLines = splitHighlightedLines(result.value);
+  } catch {
+    // Plain text remains editable even if a grammar cannot process the input.
+  }
+}
 
 function textError(value) {
   return value.includes('\0') ? 'invalid' : null;
@@ -604,7 +840,8 @@ function drawCode(target, start, count, limit) {
     number.setAttribute('aria-hidden', 'true');
     const lineNumber = start + index;
     number.textContent = lineNumber + 1;
-    if (text === CODE && HL[lineNumber] != null) row.innerHTML = HL[lineNumber];
+    if (text === CODE && resolvedLanguage === 'javascript' && HL[lineNumber] != null) row.innerHTML = HL[lineNumber];
+    else if (highlightedLines?.[lineNumber]) appendTokens(row, highlightedLines[lineNumber], limit);
     else row.textContent = value.slice(0, limit);
     row.prepend(number);
     return row;
@@ -626,13 +863,16 @@ function drawCard() {
 }
 
 function updatePreview() {
-  codeLines = text.split('\n');
-  $('.lang').hidden = text !== CODE;
+  updateHighlighting();
+  const badge = $('.lang');
+  badge.hidden = !resolvedLanguage;
+  if (resolvedLanguage === 'plaintext') badge.textContent = words.plain;
+  else if (resolvedLanguage) badge.textContent = resolvedLanguage === 'javascript' ? 'JS' : codeLanguageName(resolvedLanguage);
   drawCard();
 }
 
 if (withToolbar) {
-  const editor = $('#editor'), input = $('#input');
+  const editor = $('#editor'), input = $('#input'), language = $('#language');
   const titleInput = $('#card-title-input');
   const settings = $('#settings'), directEdit = $('#direct-edit');
   const editorError = $('#editor-error');
@@ -656,6 +896,63 @@ if (withToolbar) {
     event.preventDefault();
     if (event.key === 'Escape') titleInput.value = cardTitle.textContent;
     titleInput.blur();
+  });
+  const languages = $('#languages'), codeLanguage = $('#code-language'), languageMenu = $('#language-menu');
+  const systemLocale = matchDisplayLanguage(navigator.language);
+  for (const [id, name] of Object.entries(displayNames)) {
+    if (id === 'en' || id === 'ko') continue;
+    const option = new Option(name, id);
+    option.lang = id;
+    language.add(option);
+  }
+  function setLanguage(value) {
+    const preference = Object.prototype.hasOwnProperty.call(strings, value) ? value : 'system';
+    const requested = preference === 'system' ? systemLocale : preference;
+    const locale = Object.prototype.hasOwnProperty.call(strings, requested) ? requested : 'en';
+    words = strings[locale];
+    document.documentElement.lang = locale;
+    language.value = preference;
+    $('#language-current').textContent = displayNames[locale];
+    languageMenu.setAttribute('aria-label', words.language + ' · ' + displayNames[locale]);
+    for (const [id, key] of Object.entries({
+      edit: 'edit', 'editor-title': 'edit', 'editor-hint': 'hint',
+      sample: 'sample', cancel: 'cancel', save: 'save',
+      advanced: 'advanced', 'settings-title': 'advanced', 'direct-label': 'direct',
+      'direct-hint': 'directHint',
+      'close-settings': 'done', 'languages-title': 'language', 'display-language-label': 'displayLanguage',
+      'code-language-label': 'codeLanguage', 'code-language-hint': 'codeLanguageHint',
+      'close-languages': 'done', 'code-auto': 'automatic', 'code-plain': 'plain',
+      'system-language': 'systemLanguage'
+    })) $(`#${id}`).textContent = words[key];
+    cardInput.setAttribute('aria-label', words.direct);
+    titleInput.setAttribute('aria-label', words.cardTitle);
+    bIdle.querySelector('span').textContent = words.copy;
+    bDone.querySelector('span').textContent = words.copied;
+    btn.setAttribute('aria-label', words.copy);
+    muteBtn.setAttribute('aria-label', Audio.muted ? words.unmute : words.mute);
+    updatePreview();
+    fit();
+  }
+
+  try { setLanguage(localStorage.getItem('copyclip.language')); }
+  catch { setLanguage('system'); }
+  language.addEventListener('change', () => {
+    setLanguage(language.value);
+    try { localStorage.setItem('copyclip.language', language.value); } catch {}
+  });
+  const availableLanguages = (highlighter?.listLanguages() ?? []).filter(id => id !== 'plaintext');
+  availableLanguages.sort((a, b) => codeLanguageName(a).localeCompare(codeLanguageName(b)));
+  for (const id of availableLanguages) {
+    codeLanguage.add(new Option(codeLanguageName(id), id));
+  }
+  languageMenu.addEventListener('click', () => languages.showModal());
+  $('#close-languages').addEventListener('click', () => languages.close());
+  languages.addEventListener('close', () => {
+    if (directEdit.checked) cardInput.focus();
+  });
+  codeLanguage.addEventListener('change', () => {
+    selectedLanguage = codeLanguage.value;
+    updatePreview();
   });
   $('#edit').addEventListener('click', () => {
     input.value = text;
@@ -750,7 +1047,7 @@ async function onCopy() {
   if (error) {
     clicks.length = 0;
     renderButton(now(), clicks);
-    copyLabel.textContent = 'Copy failed';
+    copyLabel.textContent = words.browserFailure === strings.en.browserFailure ? 'Copy failed' : words.copy;
     live.textContent = words[error];
     return;
   }
